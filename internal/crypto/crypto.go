@@ -6,18 +6,28 @@ import (
 	"crypto/rand"
 	"errors"
 	"io"
+	"runtime"
 
 	"golang.org/x/crypto/argon2"
 )
 
+/* Zeroes a slice to remove it from memory */
+func Wipe(slice []byte) {
+    if slice == nil {
+        return
+    }
+    for i := range slice {
+        slice[i] = 0
+    }
+    // runtime.KeepAlive assicura che il compilatore non ottimizzi 
+    // eliminando lo slice prima che il ciclo sia finito.
+    runtime.KeepAlive(slice)
+}
+
 /* Derives a 32-bit key from the master password */
 func deriveKey(password []byte, salt []byte) []byte{
 	key := argon2.IDKey(password, salt, 1, 64*1024, 4, 32)
-
-	/* Clean password from memory */
-	for i:= range password{
-		password[i] = 0
-	}
+	defer Wipe(password)
 	return key	
 }
 
@@ -25,10 +35,8 @@ func deriveKey(password []byte, salt []byte) []byte{
 func Encrypt(plaintext []byte, masterPassword []byte, salt []byte) ([]byte,error) {
 	
 	// Clean passwords from memory after execution
-	defer func() {
-        for i := range plaintext { plaintext[i] = 0 }
-        for i := range masterPassword { masterPassword[i] = 0 }
-    }()
+	defer Wipe(plaintext)
+	defer Wipe(masterPassword)
 	
 	//Derive key from master password
 	key := deriveKey(masterPassword,salt)	
@@ -40,10 +48,7 @@ func Encrypt(plaintext []byte, masterPassword []byte, salt []byte) ([]byte,error
 	aesgcm, err := cipher.NewGCM(block)
 	if err != nil { return nil,err }
 
-	// Clean key from memory
-	for i := range key{
-		key[i] = 0
-	}
+	Wipe(key)	// Clean key from memory
 
 	//Generate nonce
 	nonce := make([]byte, aesgcm.NonceSize())
@@ -57,12 +62,8 @@ func Encrypt(plaintext []byte, masterPassword []byte, salt []byte) ([]byte,error
 }
 
 func Decrypt(data []byte, masterPassword []byte, salt []byte) ([]byte,error){
-// Deriva chiave -> Crea AES-GCM -> Ottieni plaintext
-
 	// Clean passwords from memory after execution
-	defer func() {
-        for i := range masterPassword { masterPassword[i] = 0 }
-    }()
+	defer Wipe(masterPassword)
 	
 	//Derive key from master password
 	key := deriveKey(masterPassword,salt)	
@@ -70,14 +71,10 @@ func Decrypt(data []byte, masterPassword []byte, salt []byte) ([]byte,error){
 	/******* Initialize AES-GCM cipher with derived key *******/
 	block, err := aes.NewCipher(key)
 	if err != nil { return nil,err }
-
 	aesgcm, err := cipher.NewGCM(block)
 	if err != nil { return nil,err }
 
-	// Clean key from memory
-	for i := range key{
-		key[i] = 0
-	}
+	Wipe(key)	// Clean key from memory
 
 	// Extract nonce from package data
 	nonceSize := aesgcm.NonceSize()

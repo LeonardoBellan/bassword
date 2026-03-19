@@ -25,7 +25,7 @@ func InitDB(path string) error {
 	query :=
 		`CREATE TABLE IF NOT EXISTS credentials (
 			id INTEGER PRIMARY KEY, 
-			service_name TEXT NOT NULL,
+			service_name TEXT NOT NULL UNIQUE,
 			username TEXT,
 			encrypted_data BLOB,
 			salt BLOB,
@@ -37,10 +37,16 @@ func InitDB(path string) error {
 	return nil
 }
 
-func SavePassword(entry *models.CredentialEntry) error {
+/* Adds a new password to the DB, if it already exists for a service updates it with the new values */
+func AddPassword(entry *models.CredentialEntry) error {
 	query :=
 		`INSERT INTO credentials (service_name, username, encrypted_data, salt)
-		VALUES (?, ?, ?, ?);`
+		VALUES (?, ?, ?, ?)
+		ON CONFLICT(service_name) DO UPDATE SET
+			username = excluded.username,
+			encrypted_data = excluded.encrypted_data,
+			salt = excluded.salt,
+			created_at = CURRENT_TIMESTAMP;` // Memorize update time
 
 	_, err := DB.Exec(query, entry.ServiceName, entry.Username, entry.EncryptedData, entry.Salt)
 	return err
@@ -67,6 +73,5 @@ func GetCredentialsByService(serviceName string) (*models.CredentialEntry,error)
         }
         return nil, err
     }
-
 	return &entry, nil
 }
