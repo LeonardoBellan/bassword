@@ -36,6 +36,13 @@ func InitDB(path string) error {
 	return nil
 }
 
+func CloseDB() error {
+	if DB == nil {
+		return nil
+	}
+	return DB.Close()
+}
+
 /* Adds a new password to the DB, if it already exists for a service updates it with the new values */
 func AddPassword(entry *models.CredentialEntry) error {
 	query :=
