@@ -56,7 +56,7 @@ func Encrypt(plaintext []byte, masterPassword []byte, salt []byte) ([]byte,error
 		return nil,err
 	}
 
-	// Final package: nonce(12B)+ciphertext(16B)
+	// Final package: nonce(12B) + ciphertext
 	data := aesgcm.Seal(nonce, nonce, plaintext, nil)
 	return data, nil
 }

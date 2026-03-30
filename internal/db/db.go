@@ -2,7 +2,6 @@ package db
 
 import (
 	"database/sql"
-	"fmt"
 
 	"github.com/LeonardoBellan/bassword/internal/models"
 	_ "github.com/mattn/go-sqlite3"
@@ -68,9 +67,6 @@ func GetCredentialsByService(serviceName string) (*models.CredentialEntry,error)
 		&entry.CreatedAt,
 	)
 	if err != nil {
-        if err == sql.ErrNoRows {
-            return nil, fmt.Errorf("nessuna credenziale trovata per: %s", serviceName)
-        }
         return nil, err
     }
 	return &entry, nil

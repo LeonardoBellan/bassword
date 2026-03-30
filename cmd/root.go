@@ -6,7 +6,6 @@ package cmd
 import (
 	"os"
 
-	"github.com/LeonardoBellan/bassword/internal/db"
 	"github.com/spf13/cobra"
 )
 
@@ -14,15 +13,7 @@ import (
 var rootCmd = &cobra.Command{
 	Use:   "bassword",
 	Short: "CLI password manager",
-	Long: `A longer description that spans multiple lines and likely contains
-examples and usage of using your application. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
-	// Uncomment the following line if your bare application
-	// has an action associated with it:
-	// Run: func(cmd *cobra.Command, args []string) { },
+	Long: `Bassword is a CLI password manager that lets the user safely store and retrieve the passwords for his services using simple commands.`,
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
@@ -36,9 +27,9 @@ func Execute() {
 
 //flags and configuration settings
 func init() {
-	// rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.bassword.yaml)")
-	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
-
-	db.InitDB("./passwords.db")
+	dbpath := "./passwords.db"
+	rootCmd.PersistentFlags().StringVar(&dbpath, "db-config", "passwords.db", "path of the DB (default is $HOME/.passwords.db)")
+	
 	rootCmd.AddCommand(addPasswordCmd)
+	rootCmd.AddCommand(getPasswordCmd)
 }
