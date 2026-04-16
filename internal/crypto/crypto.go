@@ -19,8 +19,6 @@ func Wipe(slice []byte) {
     for i := range slice {
         slice[i] = 0
     }
-    // runtime.KeepAlive assicura che il compilatore non ottimizzi 
-    // eliminando lo slice prima che il ciclo sia finito.
     runtime.KeepAlive(slice)
 }
 

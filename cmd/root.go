@@ -17,7 +17,7 @@ var (
 	rootCmd = &cobra.Command{
 		Use:   "bassword",
 		Short: "CLI password manager",
-		Long: `Bassword is a CLI password manager that lets the user safely store and retrieve the passwords for his services using simple commands.`,
+		Long: `Bassword is a CLI password manager that lets the user safely store and retrieve the passwords for his services.`,
 	}
 )
 
@@ -37,4 +37,5 @@ func init() {
 
 	rootCmd.AddCommand(addPasswordCmd)
 	rootCmd.AddCommand(getPasswordCmd)
+	rootCmd.AddCommand(initCmd)
 }

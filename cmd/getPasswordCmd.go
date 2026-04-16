@@ -1,7 +1,9 @@
 package cmd
 
 import (
+	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 
 	"github.com/LeonardoBellan/bassword/internal/crypto"
@@ -14,23 +16,36 @@ var getPasswordCmd = &cobra.Command{
 	Short: "Prints the password associated to the service",
 	Args:  cobra.ExactArgs(1),
 	PreRunE: func(cmd *cobra.Command, args []string) error {
-		return db.InitDB(dbPath)
+			ctx := context.Background()
+
+			err := db.OpenDB(ctx,dbPath)
+			if err != nil {
+				if !errors.Is(err, db.ErrDBNotInitialized) {
+					return err
+				}
+				return fmt.Errorf("DB not initialized, run bassword init")
+			}
+		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		defer db.CloseDB()
+		ctx := context.Background()
+
+		//Get master password
+		masterPassword, err := askPassword("Insert master password: ")
+		defer crypto.Wipe(masterPassword)
+		if err != nil { return err }
+
+		//Get credentials info
 		serviceName := args[0]
-		entry, err := db.GetCredentialsByService(serviceName)
+		entry, err := db.GetCredentialsByService(ctx,serviceName)
 		if err != nil { 
 			if err == sql.ErrNoRows {
-            	fmt.Printf("No credentials found for: %s", serviceName)
+            	fmt.Println("No credentials found for: ", serviceName)
+				fmt.Print("Use 'bassword add ",serviceName,"' to add these credentials\n")
 				return nil
         	}
 			return err
 		}
-
-		masterPassword, err := askPassword("Insert master password: ")
-		if err != nil { return err }
-		defer crypto.Wipe(masterPassword)
 
 		plaintext,err := crypto.Decrypt(entry.EncryptedData, masterPassword, entry.Salt)
 		if err != nil { return err }
@@ -41,8 +56,13 @@ var getPasswordCmd = &cobra.Command{
 		if err != nil { return err }
 
 		fmt.Println("Password inserted into clipboard, elapses in ", clipboardTimeout)
-
 		<-writeDone
+		return nil
+	},
+	PostRunE: func(cmd *cobra.Command, args []string) error {
+		if err := db.CloseDB(); err != nil {
+			return err
+		}
 		return nil
 	},
 }
