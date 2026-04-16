@@ -75,7 +75,7 @@ func InitializeDB(ctx context.Context, masterPassword []byte) error {
 
 // Checks if the masterPassword is correct
 // Returns ErrWrongPassword if the password is not correct
-func verifyMasterPassword(ctx context.Context, masterPassword []byte) error {
+func verifyMasterPassword(ctx context.Context, masterPassword []byte) ([]byte, error) {
 	expectedCanary := "VERIFICATION_OK"
 
 	// Get canary
@@ -83,38 +83,50 @@ func verifyMasterPassword(ctx context.Context, masterPassword []byte) error {
 	var canaryCiphertext []byte
 	query := `SELECT kdf_salt,canary_ciphertext FROM app_config WHERE id = 1`
 	err := db.QueryRowContext(ctx,query).Scan(&salt,&canaryCiphertext)
-	if err != nil { return err }
+	if err != nil { return nil,err }
 	canaryPlaintext,err := crypto.Decrypt(canaryCiphertext,masterPassword,salt)
-	if err != nil { return err }
+	if err != nil { return nil,err }
 
 	// Verify canary
     match := subtle.ConstantTimeCompare(canaryPlaintext, []byte(expectedCanary))
-    if match != 1 { return ErrWrongPassword }
+    if match != 1 { return nil,ErrWrongPassword }
 
-	return nil
+	return salt,nil
 }
 
 // Adds a new password to the DB, if it already exists for a service updates it with the new values
-func AddPassword(ctx context.Context, entry *models.CredentialEntry) error {
+func AddPassword(ctx context.Context, masterPassword []byte, password []byte, entry *models.CredentialEntry) error {
+	//Verify if master password is correct
+	salt,err := verifyMasterPassword(ctx,masterPassword)
+	defer crypto.Wipe(masterPassword)
+	if err != nil { return err }
+
+	entry.EncryptedData, err = crypto.Encrypt(password, masterPassword, salt)
+	if err != nil { return err }
+	
 	query :=
-		`INSERT INTO vault (service_name, username, encrypted_data, salt)
-		VALUES (?, ?, ?, ?)
+		`INSERT INTO vault (service_name, username, encrypted_data)
+		VALUES (?, ?, ?)
 		ON CONFLICT(service_name) DO UPDATE SET
 			username = excluded.username,
 			encrypted_data = excluded.encrypted_data,
-			salt = excluded.salt,
 			created_at = CURRENT_TIMESTAMP;` // Memorize update time
 
-	_, err := db.ExecContext(ctx,query, entry.ServiceName, entry.Username, entry.EncryptedData, entry.Salt)
+	_, err = db.ExecContext(ctx,query, entry.ServiceName, entry.Username, entry.EncryptedData)
 	return err
 }
 
 // Returns the credential entry of the service
-func GetCredentialsByService(ctx context.Context, serviceName string) (*models.CredentialEntry,error){
-	var entry models.CredentialEntry
+func GetCredentialsByService(ctx context.Context, masterPassword []byte, serviceName string) ([]byte,error){
+	//Verify if master password is correct
+	salt,err := verifyMasterPassword(ctx,masterPassword)
+	defer crypto.Wipe(masterPassword)
+	if err != nil { return nil,err }
 	
+	//Get entry of a service
+	var entry models.CredentialEntry
 	query :=
-		`SELECT id, service_name, username, encrypted_data, salt, created_at
+		`SELECT id, service_name, username, encrypted_data, created_at
 		FROM vault
 		WHERE service_name = ?;`
 	if err := db.QueryRowContext(ctx,query, serviceName).Scan(
@@ -122,10 +134,14 @@ func GetCredentialsByService(ctx context.Context, serviceName string) (*models.C
 		&entry.ServiceName,
 		&entry.Username,
 		&entry.EncryptedData,
-		&entry.Salt,
 		&entry.CreatedAt,
 	); err != nil {
         return nil, err
     }
-	return &entry, nil
+
+	//Decrypt password
+	password,err := crypto.Decrypt(entry.EncryptedData, masterPassword, salt)
+	if err != nil { return nil,err }
+
+	return password,nil
 }

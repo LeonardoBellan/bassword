@@ -34,7 +34,6 @@ func createTableVault(ctx context.Context) error {
 			service_name TEXT NOT NULL UNIQUE,
 			username TEXT,
 			encrypted_data BLOB,
-			salt BLOB,
 			created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 		);
 	`

@@ -16,7 +16,7 @@ var initCmd = &cobra.Command{
 		ctx := context.Background()
 
 		// Ask for master password
-		masterPassword, err := askPassword("Insert master password: ")
+		masterPassword, err := getMasterPassword()
 		if err != nil {
 			return err
 		}

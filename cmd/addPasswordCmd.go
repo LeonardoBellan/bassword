@@ -2,8 +2,6 @@ package cmd
 
 import (
 	"context"
-	"crypto/rand"
-	"errors"
 	"fmt"
 
 	"github.com/LeonardoBellan/bassword/internal/crypto"
@@ -17,58 +15,34 @@ var addPasswordCmd = &cobra.Command{
 	Short: "Save or updates a password for a service",
 	Args:  cobra.ExactArgs(2),
 	PreRunE: func(cmd *cobra.Command, args []string) error {
-			ctx := context.Background()
-
-			err := db.OpenDB(ctx,dbPath)
-			if err != nil {
-				if !errors.Is(err, db.ErrDBNotInitialized) {
-					return err
-				}
-				return fmt.Errorf("DB not initialized, run bassword init")
-			}
-			return nil
+		ctx := context.Background()
+		return ensureDBOpen(ctx, dbPath)
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := context.Background()
 
-		//Get master password
-		masterPassword, err := askPassword("Insert master password: ")
-		defer crypto.Wipe(masterPassword)
-		if err != nil { return err }
-
-		//Fill new entry fields
+		// Fill new entry fields
 		var newEntry models.CredentialEntry
 		newEntry.ServiceName = args[0]
 		newEntry.Username = args[1]
-		newEntry.Salt = make([]byte, 16)
-		if _, err := rand.Read(newEntry.Salt); err != nil {
-			return err
-		}
-		
+
+		//Get master password
+		masterPassword, err := getMasterPassword()
+		defer crypto.Wipe(masterPassword)
+		if err != nil { return err }
+
+		//Get service password
 		plaintext, err := askPassword(fmt.Sprintf("Insert password for %s: ", newEntry.ServiceName))
 		if err != nil { return err }
 		defer crypto.Wipe(plaintext) //Clean password from memory
 
+		err = db.AddPassword(ctx,masterPassword,plaintext,&newEntry)
+		if err != nil { return err }
+
 		//Copy password in clipboard
-		writeDone,err := copyToClipboardWithTimeout(plaintext, clipboardTimeout)
-		if err != nil {
-			return err
-		}
-
-		//Add encrypted password to DB
-		newEntry.EncryptedData, err = crypto.Encrypt(plaintext, masterPassword, newEntry.Salt)
-		if err != nil { return err }
-		err = db.AddPassword(ctx, &newEntry)
-		if err != nil { return err }
-
-		fmt.Println("Added password and inserted into clipboard, elapses in ", clipboardTimeout)
-		<-writeDone	//Wait for clipboard clearing
-		return nil
+		return copyPasswordToClipboard(plaintext, clipboardTimeout)
 	},
 	PostRunE: func(cmd *cobra.Command, args []string) error {
-		if err := db.CloseDB(); err != nil {
-			return err
-		}
-		return nil
+		return closeDB()
 	},
 }

@@ -2,6 +2,8 @@ package cmd
 
 import (
 	"bytes"
+	"context"
+	"errors"
 	"fmt"
 	"os"
 	"time"
@@ -9,6 +11,7 @@ import (
 	"golang.design/x/clipboard"
 
 	"github.com/LeonardoBellan/bassword/internal/crypto"
+	"github.com/LeonardoBellan/bassword/internal/db"
 	"golang.org/x/term"
 )
 
@@ -27,7 +30,6 @@ func copyToClipboardWithTimeout(text []byte, duration time.Duration) (<-chan str
 
 	expected := make([]byte, len(text))
 	copy(expected, text)
-	
 
 	//Wait and clear clipboard content if it has not changed
 	go func() {
@@ -36,7 +38,6 @@ func copyToClipboardWithTimeout(text []byte, duration time.Duration) (<-chan str
 		if err := clipboard.Init(); err != nil {
 			return
 		}
-		fmt.Println("Erasing clipboard")
 		current := clipboard.Read(clipboard.FmtText)
 		if bytes.Equal(current, expected) {
 			clearDone := clipboard.Write(clipboard.FmtText, []byte(""))
@@ -45,4 +46,38 @@ func copyToClipboardWithTimeout(text []byte, duration time.Duration) (<-chan str
 	}()
 
 	return writeDone,nil
+}
+
+// copyPasswordToClipboard securely copies the password to clipboard with timeout and user feedback.
+func copyPasswordToClipboard(password []byte, timeout time.Duration) error {
+	writeDone, err := copyToClipboardWithTimeout(password, timeout)
+	if err != nil {
+		return err
+	}
+	fmt.Println("Password inserted into clipboard, expires in ", timeout)
+	<-writeDone
+	return nil
+}
+
+// getMasterPassword securely prompts for the master password.
+// Returns the password as []byte; the caller MUST defer crypto.Wipe() on it.
+func getMasterPassword() ([]byte, error) {
+	return askPassword("Insert master password: ")
+}
+
+// ensureDBOpen opens the DB and handles initialization errors.
+func ensureDBOpen(ctx context.Context, dbPath string) error {
+	err := db.OpenDB(ctx, dbPath)
+	if err != nil {
+		if !errors.Is(err, db.ErrDBNotInitialized) {
+			return err
+		}
+		return fmt.Errorf("DB not initialized, run bassword init")
+	}
+	return nil
+}
+
+// closeDB closes the DB and returns any error.
+func closeDB() error {
+	return db.CloseDB()
 }
