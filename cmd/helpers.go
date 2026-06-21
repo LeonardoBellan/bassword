@@ -1,11 +1,12 @@
 package cmd
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"fmt"
 	"os"
+	"os/exec"
+	"runtime"
 	"time"
 
 	"golang.design/x/clipboard"
@@ -24,28 +25,13 @@ func askPassword(prompt string) ([]byte, error) {
 
 func copyToClipboardWithTimeout(text []byte, duration time.Duration) (<-chan struct{}, error) {
 	if err := clipboard.Init(); err != nil {
-		return nil,err
+		return nil, err
 	}
 	writeDone := clipboard.Write(clipboard.FmtText, text)
 
-	expected := make([]byte, len(text))
-	copy(expected, text)
+	startClipboardClearWorker(text, duration)
 
-	//Wait and clear clipboard content if it has not changed
-	go func() {
-		defer crypto.Wipe(expected)
-		time.Sleep(duration)
-		if err := clipboard.Init(); err != nil {
-			return
-		}
-		current := clipboard.Read(clipboard.FmtText)
-		if bytes.Equal(current, expected) {
-			clearDone := clipboard.Write(clipboard.FmtText, []byte(""))
-			<-clearDone
-		}
-	}()
-
-	return writeDone,nil
+	return writeDone, nil
 }
 
 // copyPasswordToClipboard securely copies the password to clipboard with timeout and user feedback.
@@ -86,4 +72,27 @@ func closeDB() error {
 // Returns the password as []byte; the caller MUST defer crypto.Wipe() on it.
 func getPlaintextPassword(serviceName string) ([]byte, error) {
 	return askPassword(fmt.Sprintf("Insert password for %s: ", serviceName))
+}
+
+func startClipboardClearWorker(text []byte, duration time.Duration) {
+	copyData := make([]byte, len(text))
+	copy(copyData, text)
+	defer crypto.Wipe(copyData)
+
+	if runtime.GOOS == "windows" {
+		command := fmt.Sprintf("Start-Sleep -Seconds %d; Set-Clipboard -Value ''", int(duration.Seconds()))
+		cmd := exec.Command("cmd", "/C", "start", "/B", "powershell", "-NoProfile", "-WindowStyle", "Hidden", "-Command", command)
+		_ = cmd.Start()
+		return
+	}
+
+	go func() {
+		defer crypto.Wipe(copyData)
+		time.Sleep(duration)
+		if err := clipboard.Init(); err != nil {
+			return
+		}
+		clearDone := clipboard.Write(clipboard.FmtText, []byte(""))
+		<-clearDone
+	}()
 }

@@ -25,7 +25,6 @@ func OpenDB(ctx context.Context, dbPath string) error {
 	
 	//Ensure DB is initialied correctly, if not initializes it
 	if err := setupDB(ctx); err != nil {
-		//TODO: in other functions after calling it check for ErrDBNotInitialized
 		return err
 	}
 

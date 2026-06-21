@@ -43,6 +43,9 @@ var getPasswordCmd = &cobra.Command{
 		return copyPasswordToClipboard(password, clipboardTimeout)
 	},
 	PostRunE: func(cmd *cobra.Command, args []string) error {
-		return closeDB()
+		if err := closeDB(); err != nil {
+			return err
+		}
+		return nil
 	},
 }

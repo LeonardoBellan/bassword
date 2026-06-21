@@ -32,8 +32,8 @@ var addPasswordCmd = &cobra.Command{
 
 		//Get service password
 		plaintext, err := getPlaintextPassword(newEntry.ServiceName)
-		if err != nil { return err }
 		defer crypto.Wipe(plaintext) //Clean password from memory
+		if err != nil { return err }
 
 		err = db.AddPassword(ctx,masterPassword,plaintext,&newEntry)
 		if err != nil { return err }
@@ -42,6 +42,10 @@ var addPasswordCmd = &cobra.Command{
 		return copyPasswordToClipboard(plaintext, clipboardTimeout)
 	},
 	PostRunE: func(cmd *cobra.Command, args []string) error {
-		return closeDB()
+		if err := closeDB(); err != nil {
+			return err
+		}
+		closeShell()
+		return nil
 	},
 }

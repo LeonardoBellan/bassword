@@ -49,8 +49,8 @@ func init() {
 	rootCmd.TraverseChildren = true
 	rootCmd.PersistentFlags().StringVar(&dbPath, "db-config", defaultDBPath, "path of the DB (default is $HOME/.bassword/passwords.db)")
 	rootCmd.PersistentFlags().DurationVar(&clipboardTimeout, "clipboard-clear", 30*time.Second, "clipboard clear timeout")
-
+	
+	rootCmd.AddCommand(initCmd)
 	rootCmd.AddCommand(addPasswordCmd)
 	rootCmd.AddCommand(getPasswordCmd)
-	rootCmd.AddCommand(initCmd)
 }

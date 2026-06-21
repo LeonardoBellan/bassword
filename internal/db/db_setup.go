@@ -66,7 +66,6 @@ func checkDBInitialization(ctx context.Context) error {
 	
 	//Chack if the canary exists
 	err := db.QueryRowContext(ctx,query).Scan(&exists)
-	fmt.Println(err)
 	if err != nil {
 		//Canary not present
 		if errors.Is(err, sql.ErrNoRows) {
