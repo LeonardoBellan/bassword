@@ -6,7 +6,6 @@ import (
 	"crypto/subtle"
 	"database/sql"
 	"errors"
-	"fmt"
 
 	"github.com/LeonardoBellan/bassword/internal/crypto"
 	"github.com/LeonardoBellan/bassword/internal/models"
@@ -46,12 +45,10 @@ func insertCanary(ctx context.Context, masterPassword []byte) error {
 	canaryText := "VERIFICATION_OK"
 	salt := make([]byte, 16)
 	rand.Read(salt)
-	canaryCiphertext,err := crypto.Encrypt([]byte(canaryText), masterPassword, salt)
-	if err != nil { return err }
-
-
-	fmt.Println("salt " , salt)
-	fmt.Println("ciphertext ",canaryCiphertext)
+	canaryCiphertext, err := crypto.Encrypt([]byte(canaryText), masterPassword, salt)
+	if err != nil {
+		return err
+	}
 
 	query := `
 		INSERT INTO app_config(id,kdf_salt,canary_ciphertext)
@@ -59,11 +56,11 @@ func insertCanary(ctx context.Context, masterPassword []byte) error {
 		ON CONFLICT(id) DO UPDATE SET
 			kdf_salt = excluded.kdf_salt,
 			canary_ciphertext = excluded.canary_ciphertext`;
-	_, err = db.ExecContext(ctx,query,salt,canaryCiphertext)
-	if err != nil { return err }
-	
+	_, err = db.ExecContext(ctx, query, salt, canaryCiphertext)
+	if err != nil {
+		return err
+	}
 
-	fmt.Println("CANARY INSERITO IN TEORIA")
 	return nil
 }
 
@@ -88,7 +85,7 @@ func verifyMasterPassword(ctx context.Context, masterPassword []byte) ([]byte, e
 
 	// Verify canary
     match := subtle.ConstantTimeCompare(canaryPlaintext, []byte(expectedCanary))
-    if match != 1 { return nil,ErrWrongPassword }
+    if match != 1 { return nil, ErrWrongPassword }
 
 	return salt,nil
 }

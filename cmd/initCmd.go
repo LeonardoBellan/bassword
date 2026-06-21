@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/LeonardoBellan/bassword/internal/crypto"
 	"github.com/LeonardoBellan/bassword/internal/db"
@@ -33,6 +34,7 @@ var initCmd = &cobra.Command{
 			return err
 		}
 
+		fmt.Printf("Database initialized at %s\n", dbPath)
 		return nil
 	},
 }

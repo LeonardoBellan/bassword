@@ -24,20 +24,17 @@ func Wipe(slice []byte) {
 
 /* Derives a 32-bit key from the master password */
 func deriveKey(password []byte, salt []byte) []byte{
-	key := argon2.IDKey(password, salt, 1, 64*1024, 4, 32)
-	defer Wipe(password)
-	return key	
+	return argon2.IDKey(password, salt, 1, 64*1024, 4, 32)
 }
 
 /* Encypts plaintext password in AES-GCM using a derived key from the master password */
 func Encrypt(plaintext []byte, masterPassword []byte, salt []byte) ([]byte,error) {
 	
-	// Clean passwords from memory after execution
+	// Clean plaintext from memory after execution
 	defer Wipe(plaintext)
-	defer Wipe(masterPassword)
-	
-	//Derive key from master password
-	key := deriveKey(masterPassword,salt)	
+
+	// Derive key from master password
+	key := deriveKey(masterPassword, salt)
 
 	/******* Initialize AES-GCM cipher with derived key *******/
 	block, err := aes.NewCipher(key)
@@ -62,9 +59,9 @@ func Encrypt(plaintext []byte, masterPassword []byte, salt []byte) ([]byte,error
 func Decrypt(data []byte, masterPassword []byte, salt []byte) ([]byte,error){
 	// Clean passwords from memory after execution
 	defer Wipe(masterPassword)
-	
-	//Derive key from master password
-	key := deriveKey(masterPassword,salt)	
+
+	// Derive key from master password
+	key := deriveKey(masterPassword, salt)
 
 	/******* Initialize AES-GCM cipher with derived key *******/
 	block, err := aes.NewCipher(key)
