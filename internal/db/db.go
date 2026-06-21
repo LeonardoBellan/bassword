@@ -40,7 +40,6 @@ func CloseDB() error {
 	return db.Close()
 }
 
-
 func insertCanary(ctx context.Context, masterPassword []byte) error {
 	defer crypto.Wipe(masterPassword)
 

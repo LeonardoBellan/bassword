@@ -81,3 +81,9 @@ func ensureDBOpen(ctx context.Context, dbPath string) error {
 func closeDB() error {
 	return db.CloseDB()
 }
+
+// getPlaintextPassword prompts for a service's password.
+// Returns the password as []byte; the caller MUST defer crypto.Wipe() on it.
+func getPlaintextPassword(serviceName string) ([]byte, error) {
+	return askPassword(fmt.Sprintf("Insert password for %s: ", serviceName))
+}

@@ -26,7 +26,7 @@ var getPasswordCmd = &cobra.Command{
 		defer crypto.Wipe(masterPassword)
 		if err != nil { return err }
 
-		//Get password of service
+		//Get service password
 		serviceName := args[0]
 		password, err := db.GetCredentialsByService(ctx,masterPassword,serviceName)
 		defer crypto.Wipe(password)

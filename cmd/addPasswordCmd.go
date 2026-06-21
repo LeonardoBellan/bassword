@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/LeonardoBellan/bassword/internal/crypto"
 	"github.com/LeonardoBellan/bassword/internal/db"
@@ -32,7 +31,7 @@ var addPasswordCmd = &cobra.Command{
 		if err != nil { return err }
 
 		//Get service password
-		plaintext, err := askPassword(fmt.Sprintf("Insert password for %s: ", newEntry.ServiceName))
+		plaintext, err := getPlaintextPassword(newEntry.ServiceName)
 		if err != nil { return err }
 		defer crypto.Wipe(plaintext) //Clean password from memory
 
