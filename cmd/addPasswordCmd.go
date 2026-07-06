@@ -45,7 +45,6 @@ var addPasswordCmd = &cobra.Command{
 		if err := closeDB(); err != nil {
 			return err
 		}
-		closeShell()
 		return nil
 	},
 }
