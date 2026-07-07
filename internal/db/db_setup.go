@@ -2,9 +2,12 @@ package db
 
 import (
 	"context"
+	"crypto/rand"
 	"database/sql"
 	"errors"
 	"fmt"
+
+	"github.com/LeonardoBellan/bassword/internal/crypto"
 )
 
 var ErrDBNotInitialized = errors.New("The database is not initialized")
@@ -28,44 +31,49 @@ func setupDB(ctx context.Context) error {
 
 func createTableVault(ctx context.Context) error {
 	/* Create table if not exists */
-	createTableQuery :=
-		`CREATE TABLE IF NOT EXISTS vault (
-			id INTEGER PRIMARY KEY, 
-			service_name TEXT NOT NULL UNIQUE,
-			username TEXT,
-			encrypted_data BLOB,
-			created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-		);
-	`
-	if _, err := db.ExecContext(ctx, createTableQuery); err != nil {
+	if _, err := db.ExecContext(ctx, createVaultTableSQL); err != nil {
 		return err
 	}
 	return nil
 }
 func createTableConfig(ctx context.Context) error {
 	/* Create table if not exists */
-	createTableQuery :=
-		`CREATE TABLE IF NOT EXISTS app_config (
-			id INTEGER PRIMARY KEY CHECK (id = 1), 
-			kdf_salt BLOB NOT NULL,
-			canary_ciphertext BLOB NOT NULL
-		);
-	`
-	if _, err := db.ExecContext(ctx, createTableQuery); err != nil {
+	if _, err := db.ExecContext(ctx, createConfigTableSQL); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-// CheckDBInitialization verifies if the database has been initialized.
+// InitializeDB initializes the database with the master password
+func InitializeDB(ctx context.Context, masterPassword []byte) error {
+	return insertCanary(ctx, masterPassword)
+}
+
+func insertCanary(ctx context.Context, masterPassword []byte) error {
+	defer crypto.Wipe(masterPassword)
+	salt := make([]byte, 16)
+	rand.Read(salt)
+	canaryCiphertext, err := crypto.Encrypt([]byte(canaryText), masterPassword, salt)
+	if err != nil {
+		return err
+	}
+	_, err = db.ExecContext(ctx, upsertCanaryQuery, canaryID, salt, canaryCiphertext)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// CheckDBInitialization verifies if the database has been initialized (There is a Canary)
 // Returns ErrDBNotInitialized if not initialized, nil if it has been already initialized
 func checkDBInitialization(ctx context.Context) error {
 	var exists int
-	query := `SELECT 1 FROM app_config WHERE id = 1`
+	query := selectCanaryQuery
 	
-	//Chack if the canary exists
-	err := db.QueryRowContext(ctx,query).Scan(&exists)
+	//Check if the canary exists
+	err := db.QueryRowContext(ctx, query, canaryID).Scan(&exists)
 	if err != nil {
 		//Canary not present
 		if errors.Is(err, sql.ErrNoRows) {

@@ -2,7 +2,6 @@ package db
 
 import (
 	"context"
-	"crypto/rand"
 	"crypto/subtle"
 	"database/sql"
 	"errors"
@@ -38,52 +37,20 @@ func CloseDB() error {
 	return db.Close()
 }
 
-func insertCanary(ctx context.Context, masterPassword []byte) error {
-	defer crypto.Wipe(masterPassword)
-
-	canaryText := "VERIFICATION_OK"
-	salt := make([]byte, 16)
-	rand.Read(salt)
-	canaryCiphertext, err := crypto.Encrypt([]byte(canaryText), masterPassword, salt)
-	if err != nil {
-		return err
-	}
-
-	query := `
-		INSERT INTO app_config(id,kdf_salt,canary_ciphertext)
-		VALUES (1,?,?)
-		ON CONFLICT(id) DO UPDATE SET
-			kdf_salt = excluded.kdf_salt,
-			canary_ciphertext = excluded.canary_ciphertext`;
-	_, err = db.ExecContext(ctx, query, salt, canaryCiphertext)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// InitializeDB initializes the database with the master password
-func InitializeDB(ctx context.Context, masterPassword []byte) error {
-	return insertCanary(ctx, masterPassword)
-}
-
 // Checks if the masterPassword is correct
 // Returns ErrWrongPassword if the password is not correct
 func verifyMasterPassword(ctx context.Context, masterPassword []byte) ([]byte, error) {
-	expectedCanary := "VERIFICATION_OK"
-
 	// Get canary
 	var salt []byte
 	var canaryCiphertext []byte
-	query := `SELECT kdf_salt,canary_ciphertext FROM app_config WHERE id = 1`
-	err := db.QueryRowContext(ctx,query).Scan(&salt,&canaryCiphertext)
+	query := selectKdfAndCanaryQuery
+	err := db.QueryRowContext(ctx, query, canaryID).Scan(&salt, &canaryCiphertext)
 	if err != nil { return nil,err }
 	canaryPlaintext,err := crypto.Decrypt(canaryCiphertext,masterPassword,salt)
 	if err != nil { return nil,err }
 
 	// Verify canary
-    match := subtle.ConstantTimeCompare(canaryPlaintext, []byte(expectedCanary))
+	match := subtle.ConstantTimeCompare(canaryPlaintext, []byte(canaryText))
     if match != 1 { return nil, ErrWrongPassword }
 
 	return salt,nil

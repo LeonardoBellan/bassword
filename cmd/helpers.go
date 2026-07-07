@@ -58,7 +58,10 @@ func ensureDBOpen(ctx context.Context, dbPath string) error {
 		if !errors.Is(err, db.ErrDBNotInitialized) {
 			return err
 		}
-		return fmt.Errorf("DB not initialized, run bassword init")
+		// Print a clear, actionable message to stderr and return the initialization error
+		msg := fmt.Sprintf("database not initialized at %s; initialize it by running:\n  bassword init --db-config %s\n(Use a different path with --db-config if you store the DB elsewhere)", dbPath, dbPath)
+		fmt.Fprintln(os.Stderr, msg)
+		return db.ErrDBNotInitialized
 	}
 	return nil
 }
