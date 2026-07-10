@@ -1,6 +1,6 @@
 # bassword
 
-A lightweight CLI password manager built in Go. This is an educational project exploring CLI development and basic cryptography.
+Lightweight CLI password manager built in Go. This is an educational project exploring CLI development and basic cryptography.
 
 ## Features
 
@@ -32,7 +32,7 @@ _Note: The Master Password is used for encryption and cannot be recovered if los
 
 - **DB canary:** The app stores a KDF salt and an encrypted canary value in the `app_config` table (row `id = 1`) to verify the master password.
 - **Canary plaintext:** `VERIFICATION_OK`.
-- **Developer note:** `internal/db/consts.go` contains SQL statements and constants used by the DB layer (canary value, table creation SQL, queries). The canary row is parametrized using `canaryID` to avoid magic literals.
+- **Developer note:** `internal/db/consts.go`contains SQL statements and constants used by the DB layer (canary value, table creation SQL, queries). The canary row is parametrized using `canaryID` to avoid magic literals.
 
 If you change the canary text or the DB schema, reinitialize the database with `bassword init`.
 
@@ -50,7 +50,7 @@ bassword add [service] [username]
 
 **Flags:**
 
-- `-g, --generate`: Automatically generate a random password.
+- `-r, --random`: Automatically generate a random password.
 - `-l, --length <int>`: Specify generated password length (default: 16).
 
 ### Retrieve a Password
@@ -72,8 +72,6 @@ As an educational tool, this project implements standard practices:
 3. **Local Database:** No data leaves your machine.
 4. **Memory Wipe:** After using the master password and passwords they are removed from memory.
 5. **Clipboard timeout:** The clipboard is cleared (If still containing the password) after a certain amount of time.
-6.
-
 ---
 
 ## Disclaimer
