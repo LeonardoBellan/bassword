@@ -2,8 +2,10 @@ package cmd
 
 import (
 	"context"
+	"crypto/rand"
 	"errors"
 	"fmt"
+	"math/big"
 	"os"
 	"os/exec"
 	"runtime"
@@ -45,12 +47,6 @@ func copyPasswordToClipboard(password []byte, timeout time.Duration) error {
 	return nil
 }
 
-// getMasterPassword securely prompts for the master password.
-// Returns the password as []byte; the caller MUST defer crypto.Wipe() on it.
-func getMasterPassword() ([]byte, error) {
-	return askPassword("Insert master password: ")
-}
-
 // ensureDBOpen opens the DB and handles initialization errors.
 func ensureDBOpen(ctx context.Context, dbPath string) error {
 	err := db.OpenDB(ctx, dbPath)
@@ -71,10 +67,41 @@ func closeDB() error {
 	return db.CloseDB()
 }
 
+// getMasterPassword securely prompts for the master password.
+// Returns the password as []byte; the caller MUST defer crypto.Wipe() on it.
+func getMasterPassword() ([]byte, error) {
+	return askPassword("Insert master password: ")
+}
+
 // getPlaintextPassword prompts for a service's password.
 // Returns the password as []byte; the caller MUST defer crypto.Wipe() on it.
 func getPlaintextPassword(serviceName string) ([]byte, error) {
 	return askPassword(fmt.Sprintf("Insert password for %s: ", serviceName))
+}
+
+// generateRandomPassword generates a random password securely
+// Returns the generated password as []byte; the caller MUST defer crypto.Wipe() on it.
+func generateRandomPassword(length int) ([]byte, error) {
+	//Charset used for password and PIN generation
+	const (
+		lowerCharSet   = "abcdefghijklmnopqrstuvwxyz"
+		upperCharSet   = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+		numberCharSet  = "0123456789"
+		specialCharSet = "!@#$%^&*()-_=+,.?/:;{}[]~"
+		allCharSet     = lowerCharSet + upperCharSet + numberCharSet + specialCharSet
+	)
+
+	password := make([]byte, length)
+	charSetLength := big.NewInt(int64(len(allCharSet)))
+
+	for i := 0; i<length; i++ {
+		randomIdx,err := rand.Int(rand.Reader, charSetLength)
+		if err != nil { return nil,err }
+
+		password[i] = allCharSet[randomIdx.Int64()]
+	}
+
+	return password,nil
 }
 
 func startClipboardClearWorker(text []byte, duration time.Duration) {

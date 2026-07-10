@@ -64,3 +64,7 @@ password. Back up your database before reinitializing.
 		return nil
 	},
 }
+
+func init(){
+	rootCmd.AddCommand(initCmd)
+}

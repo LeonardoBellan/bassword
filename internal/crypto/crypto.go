@@ -29,9 +29,6 @@ func deriveKey(password []byte, salt []byte) []byte{
 
 /* Encypts plaintext password in AES-GCM using a derived key from the master password */
 func Encrypt(plaintext []byte, masterPassword []byte, salt []byte) ([]byte,error) {
-	
-	// Clean plaintext from memory after execution
-	defer Wipe(plaintext)
 
 	// Derive key from master password
 	key := deriveKey(masterPassword, salt)
@@ -42,7 +39,6 @@ func Encrypt(plaintext []byte, masterPassword []byte, salt []byte) ([]byte,error
 
 	aesgcm, err := cipher.NewGCM(block)
 	if err != nil { return nil,err }
-
 	Wipe(key)	// Clean key from memory
 
 	//Generate nonce

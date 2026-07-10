@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/LeonardoBellan/bassword/internal/crypto"
 	"github.com/LeonardoBellan/bassword/internal/db"
@@ -9,11 +10,43 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var (
+	random bool
+	length int
+)
+
 var addPasswordCmd = &cobra.Command{
-	Use:   "add [service] [username]",
-	Short: "Save or updates a password for a service",
+	Use:   "add <service> <username>",
+	Short: "Save or update a password for a service",
+	Long: `Save or update a password for a service.
+
+By default, the command prompts for the password interactively.
+Use --random to generate a secure random password instead, and --length to set its size.`,
+	Example: `  bassword add github alice
+  bassword add github alice --random
+  bassword add github alice --random --length 24`,
 	Args:  cobra.ExactArgs(2),
 	PreRunE: func(cmd *cobra.Command, args []string) error {
+		var err error
+
+		random, err = cmd.Flags().GetBool("random")
+		if err != nil {
+			return err
+		}
+
+		length, err = cmd.Flags().GetInt("length")
+		if err != nil {
+			return err
+		}
+
+		lengthFlagChanged := cmd.Flags().Changed("length")
+		if lengthFlagChanged && !random {
+			return fmt.Errorf("--length requires --random")
+		}
+		if length <= 0 {
+			return fmt.Errorf("--length must be greater than 0")
+		}
+
 		ctx := context.Background()
 		return ensureDBOpen(ctx, dbPath)
 	},
@@ -31,7 +64,13 @@ var addPasswordCmd = &cobra.Command{
 		if err != nil { return err }
 
 		//Get service password
-		plaintext, err := getPlaintextPassword(newEntry.ServiceName)
+		var plaintext []byte
+		if random {
+			plaintext, err = generateRandomPassword(length)
+		} else{
+			plaintext, err = getPlaintextPassword(newEntry.ServiceName)
+		}
+		fmt.Println(plaintext)
 		defer crypto.Wipe(plaintext) //Clean password from memory
 		if err != nil { return err }
 
@@ -39,6 +78,7 @@ var addPasswordCmd = &cobra.Command{
 		if err != nil { return err }
 
 		//Copy password in clipboard
+		fmt.Println(plaintext)
 		return copyPasswordToClipboard(plaintext, clipboardTimeout)
 	},
 	PostRunE: func(cmd *cobra.Command, args []string) error {
@@ -47,4 +87,9 @@ var addPasswordCmd = &cobra.Command{
 		}
 		return nil
 	},
+}
+func init() {
+	addPasswordCmd.Flags().BoolP("random", "r", false, "generate a random password instead of prompting")
+	addPasswordCmd.Flags().IntP("length", "l", 16, "length of the generated password (requires --random and must be greater than 0)")
+	rootCmd.AddCommand(addPasswordCmd)
 }

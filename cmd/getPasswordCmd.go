@@ -11,7 +11,7 @@ import (
 )
 
 var getPasswordCmd = &cobra.Command{
-	Use:   "get [service]",
+	Use:   "get <service>",
 	Short: "Prints the password associated to the service",
 	Args:  cobra.ExactArgs(1),
 	PreRunE: func(cmd *cobra.Command, args []string) error {
@@ -48,4 +48,8 @@ var getPasswordCmd = &cobra.Command{
 		}
 		return nil
 	},
+}
+
+func init(){
+	rootCmd.AddCommand(getPasswordCmd)
 }

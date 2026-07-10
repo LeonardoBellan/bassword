@@ -60,7 +60,6 @@ func verifyMasterPassword(ctx context.Context, masterPassword []byte) ([]byte, e
 func AddPassword(ctx context.Context, masterPassword []byte, password []byte, entry *models.CredentialEntry) error {
 	//Verify if master password is correct
 	salt,err := verifyMasterPassword(ctx,masterPassword)
-	defer crypto.Wipe(masterPassword)
 	if err != nil { return err }
 
 	entry.EncryptedData, err = crypto.Encrypt(password, masterPassword, salt)
