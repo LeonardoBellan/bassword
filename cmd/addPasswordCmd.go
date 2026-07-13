@@ -70,7 +70,6 @@ Use --random to generate a secure random password instead, and --length to set i
 		} else{
 			plaintext, err = getPlaintextPassword(newEntry.ServiceName)
 		}
-		fmt.Println(plaintext)
 		defer crypto.Wipe(plaintext) //Clean password from memory
 		if err != nil { return err }
 
@@ -78,7 +77,6 @@ Use --random to generate a secure random password instead, and --length to set i
 		if err != nil { return err }
 
 		//Copy password in clipboard
-		fmt.Println(plaintext)
 		return copyPasswordToClipboard(plaintext, clipboardTimeout)
 	},
 	PostRunE: func(cmd *cobra.Command, args []string) error {
