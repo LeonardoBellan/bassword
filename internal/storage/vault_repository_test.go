@@ -8,6 +8,7 @@ import (
 	"github.com/LeonardoBellan/bassword/internal/models"
 )
 
+// createExampleCredentials mock credentials
 func createExampleCredentials(t *testing.T) *models.Credentials {
 	t.Helper()
 
@@ -20,6 +21,7 @@ func createExampleCredentials(t *testing.T) *models.Credentials {
 	return example
 }
 
+// SetupTestUserRepository initializes a repository
 func setupTestVaultRepository(ctx context.Context, t *testing.T) *VaultRepository {
 	t.Helper()
 
@@ -56,6 +58,7 @@ func TestVaultRepository_IntegrationFlow(t *testing.T) {
 	t.Run("GetCredentialsByUserAndService_Success", func(t *testing.T) {
 		retrieved, err := repo.GetCredentialsByUserAndService(ctx, newCredential.UserID, newCredential.ServiceName)
 		
+		// Verify matching data with example
 		if err != nil {
 			t.Fatalf("Error getting credentials: %v", err)
 		}
@@ -82,8 +85,8 @@ func TestVaultRepository_IntegrationFlow(t *testing.T) {
 	})
 
 	t.Run("GetCredentials_Failure_ID_Not_Existing", func(t *testing.T) {
-		idInesistente := 99999
-		_, err := repo.GetCredentials(ctx, idInesistente)
+		idInexistent := 99999
+		_, err := repo.GetCredentials(ctx, idInexistent)
 		
 		if err == nil {
 			t.Error("Expected error, got none")

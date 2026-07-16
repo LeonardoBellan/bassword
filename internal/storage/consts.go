@@ -9,8 +9,8 @@ const (
 	createUsersTableSQL = `CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY, 
             email TEXT NOT NULL UNIQUE,
-            Server_Hash BLOB NOT NULL,
-            Server_Salt BLOB NOT NULL
+            server_hash BLOB NOT NULL,
+            server_salt BLOB NOT NULL
         );`
 
 	createVaultTableSQL = `CREATE TABLE IF NOT EXISTS vault (
@@ -22,17 +22,19 @@ const (
             UNIQUE(user_id, service_name)
         );`
 
-	// Authorization credentials
-	verifyAuthDataQuery = `SELECT 1 FROM users WHERE id = ?`
-
-	selectAuthDataQuery = `SELECT Server_Hash, Server_Salt FROM users WHERE id = ?`
-
-	upsertAuthDataQuery = `
-        INSERT INTO users(id, Server_Hash, Server_Salt)
+	// Users
+	upsertUserQuery = `
+        INSERT INTO users(email, server_hash, server_salt)
         VALUES (?,?,?)
         ON CONFLICT(id) DO UPDATE SET
-            Server_Hash = excluded.Server_Hash,
-            Server_Salt = excluded.Server_Salt`
+            email = excluded.email,
+            server_hash = excluded.server_hash,
+            server_salt = excluded.server_salt
+        RETURNING id`
+
+	selectUserByIdQuery = `
+        SELECT id, email, server_hash, server_salt
+        FROM users WHERE id = ?`
 
 	// Credentials
 	upsertCredentialsQuery = `
