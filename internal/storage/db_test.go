@@ -16,14 +16,14 @@ func setupTestDB(ctx context.Context,t *testing.T) (*sql.DB, string) {
 	// temporary db file
 	dbPath := filepath.Join(t.TempDir(), "test.db")
 	
-	conn, err := sql.Open("sqlite3", dbPath)
+	conn, err := OpenDB(ctx, dbPath)
 	if err != nil {
-		t.Fatalf("Impossibile aprire il DB in %s: %v", dbPath, err)
+		t.Fatalf("Error opening db in %s: %v", dbPath, err)
 	}
 
 	// Check connection
 	if err := conn.PingContext(ctx); err != nil {
-		t.Fatalf("Impossibile stabilire la connessione con il DB: %v", err)
+		t.Fatalf("Error connecting to db: %v", err)
 	}
 	
 	// Close connection
@@ -35,6 +35,8 @@ func setupTestDB(ctx context.Context,t *testing.T) (*sql.DB, string) {
 }
 
 func setupInitializedTestDB(ctx context.Context, t *testing.T) (*sql.DB, string, []byte) {
+	t.Helper()
+	
 	conn, path := setupTestDB(ctx,t)
 	masterPassword := []byte("correct-horse-battery-staple")
 	if err := InitializeDB(ctx,conn,masterPassword); err != nil {

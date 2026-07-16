@@ -11,17 +11,16 @@ const (
             email TEXT NOT NULL UNIQUE,
             Server_Hash BLOB NOT NULL,
             Server_Salt BLOB NOT NULL
-        );
-    `
+        );`
 
 	createVaultTableSQL = `CREATE TABLE IF NOT EXISTS vault (
             id INTEGER PRIMARY KEY, 
             user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
-            service_name TEXT NOT NULL UNIQUE,
+            service_name TEXT NOT NULL,
             encrypted_data BLOB,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-        );
-    `
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(user_id, service_name)
+        );`
 
 	// Authorization credentials
 	verifyAuthDataQuery = `SELECT 1 FROM users WHERE id = ?`
@@ -36,18 +35,20 @@ const (
             Server_Salt = excluded.Server_Salt`
 
 	// Credentials
-	upsertPasswordQuery = `
-        INSERT INTO vault (service_name, username, encrypted_data)
+	upsertCredentialsQuery = `
+        INSERT INTO vault (user_id, service_name, encrypted_data)
         VALUES (?,?,?)
-        ON CONFLICT(service) DO UPDATE SET
-            username = excluded.username,
-            encrpypted_data = excluded.encrypted_data,
-            created_at = CURRENT_TIMESTAMP`
+        ON CONFLICT(user_id, service_name) DO UPDATE SET
+            encrypted_data = excluded.encrypted_data,
+            created_at = CURRENT_TIMESTAMP
+        RETURNING id, created_at`
 
-	selectCredentialsByIdQuery = `SELECT id, service_name, username, encrypted_data, created_at
+	selectCredentialsByIdQuery = `
+        SELECT *
 		FROM vault
-		WHERE service_name = ?;`
-	selectCredentialsByServiceQuery = `SELECT id, service_name, username, encrypted_data, created_at
+		WHERE id = ?;`
+	selectCredentialsByUserAndServiceQuery = `
+        SELECT *
 		FROM vault
-		WHERE service_name = ?;`
+		WHERE user_id = ? AND service_name = ?;`
 )
