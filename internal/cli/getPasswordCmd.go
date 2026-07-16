@@ -1,4 +1,4 @@
-package cmd
+package main
 
 import (
 	"context"
@@ -27,6 +27,7 @@ var getPasswordCmd = &cobra.Command{
 		if err != nil { return err }
 
 		//Get service password
+		//TODO: use client function using API endpoints
 		serviceName := args[0]
 		password, err := db.GetCredentialsByService(ctx,masterPassword,serviceName)
 		defer crypto.Wipe(password)

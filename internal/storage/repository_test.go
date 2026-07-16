@@ -1,62 +1,14 @@
-package db
+package storage
 
 import (
 	"context"
 	"database/sql"
 	"errors"
-	"path/filepath"
 	"testing"
 
 	"github.com/LeonardoBellan/bassword/internal/models"
 )
 
-func openTempDB(t *testing.T) string {
-	t.Helper()
-	dir := t.TempDir()
-	path := filepath.Join(dir, "bassword_test.db")
-	t.Cleanup(func() {
-		_ = CloseDB()
-	})
-	return path
-}
-
-func TestOpenDB_ReturnsErrDBNotInitialized(t *testing.T) {
-	path := openTempDB(t)
-	ctx := context.Background()
-
-	err := OpenDB(ctx, path)
-	if !errors.Is(err, ErrDBNotInitialized) {
-		t.Fatalf("expected ErrDBNotInitialized, got %v", err)
-	}
-}
-
-func TestInitializeDBAndVerifyMasterPassword(t *testing.T) {
-	path := openTempDB(t)
-	ctx := context.Background()
-
-	err := OpenDB(ctx, path)
-	if !errors.Is(err, ErrDBNotInitialized) {
-		t.Fatalf("expected ErrDBNotInitialized from OpenDB, got %v", err)
-	}
-
-	masterPassword := []byte("correct-horse-battery-staple")
-	if err := InitializeDB(ctx, append([]byte(nil), masterPassword...)); err != nil {
-		t.Fatalf("InitializeDB failed: %v", err)
-	}
-
-	salt, err := verifyMasterPassword(ctx, append([]byte(nil), masterPassword...))
-	if err != nil {
-		t.Fatalf("verifyMasterPassword failed for correct password: %v", err)
-	}
-	if len(salt) == 0 {
-		t.Fatal("expected returned salt to be non-empty")
-	}
-
-	_, err = verifyMasterPassword(ctx, []byte("wrong-password"))
-	if err == nil {
-		t.Fatal("expected verifyMasterPassword to fail for wrong password")
-	}
-}
 
 func TestAddPasswordAndGetCredentialsByService(t *testing.T) {
 	path := openTempDB(t)

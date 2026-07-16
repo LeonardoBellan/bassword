@@ -1,4 +1,4 @@
-package cmd
+package main
 
 import (
 	"context"
@@ -73,6 +73,7 @@ Use --random to generate a secure random password instead, and --length to set i
 		defer crypto.Wipe(plaintext) //Clean password from memory
 		if err != nil { return err }
 
+		//TODO: use client function using API endpoints
 		err = db.AddPassword(ctx,masterPassword,plaintext,&newEntry)
 		if err != nil { return err }
 
