@@ -1,11 +1,6 @@
 package storage
 
 const (
-	canaryText = "VERIFICATION_OK"
-	canaryID   = 1
-)
-
-const (
 	createUsersTableSQL = `CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY, 
             email TEXT NOT NULL UNIQUE,
@@ -45,12 +40,12 @@ const (
             created_at = CURRENT_TIMESTAMP
         RETURNING id, created_at`
 
-	selectCredentialsByIdQuery = `
+	selectCredentialsByIdAndUserQuery = `
         SELECT *
 		FROM vault
-		WHERE id = ?;`
-	selectCredentialsByUserAndServiceQuery = `
+		WHERE id = ? AND user_id = ?;`
+	selectCredentialsByServiceAndUserQuery = `
         SELECT *
 		FROM vault
-		WHERE user_id = ? AND service_name = ?;`
+		WHERE service_name = ? AND user_id = ?;`
 )

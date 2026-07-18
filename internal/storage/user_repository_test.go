@@ -38,9 +38,9 @@ func TestUserRepository_IntegrationFlow(t *testing.T) {
 	repo := setupTestUserRepository(ctx, t)
 	newUser := createExampleUser(t)
 
-	t.Run("AddUser_Success", func(t *testing.T) {
+	t.Run("Save_Success", func(t *testing.T) {
 		// Add user
-		err := repo.AddUser(ctx, newUser)
+		err := repo.Save(ctx, newUser)
 		
 		if err != nil {
 			t.Fatalf("Error adding user: %v", err)
@@ -51,9 +51,9 @@ func TestUserRepository_IntegrationFlow(t *testing.T) {
 		}
 	})
 
-	t.Run("GetUser_Success", func(t *testing.T) {
+	t.Run("Get_Success", func(t *testing.T) {
 		// Get user by ID
-		retrieved, err := repo.GetUser(ctx, newUser.ID)
+		retrieved, err := repo.Get(ctx, newUser.ID)
 		
 		if err != nil {
 			t.Fatalf("Error getting user: %v", err)
@@ -74,10 +74,10 @@ func TestUserRepository_IntegrationFlow(t *testing.T) {
 		}
 	})
 
-	t.Run("GetUser_Failure_ID_Not_Existing", func(t *testing.T) {
+	t.Run("Get_Failure_ID_Not_Existing", func(t *testing.T) {
 		// Expected failure
 		idInexistent := 99999
-		_, err := repo.GetUser(ctx, idInexistent)
+		_, err := repo.Get(ctx, idInexistent)
 		
 		if err == nil {
 			t.Error("Expected error, got none")

@@ -18,16 +18,17 @@ func NewVaultRepository(conn *sql.DB) *VaultRepository {
 
 // Adds a new password to the DB; if it already exists for a service, it updates it with the new values.
 // Populates the given credential with ID and createdAt fields
-func (r *VaultRepository) AddCredential(ctx context.Context, credentials *models.Credentials) error {
+func (r *VaultRepository) Save(ctx context.Context, credentials *models.Credentials) error {
 	err := r.conn.QueryRowContext(ctx, upsertCredentialsQuery, credentials.UserID, credentials.ServiceName, credentials.EncryptedData).Scan(&credentials.ID,&credentials.CreatedAt)
 	return err
 }
 
-// Returns the credential entry of the service of a user
-func (r *VaultRepository) GetCredentialsByUserAndService(ctx context.Context, userID int, serviceName string) (models.Credentials, error) {
+
+// Returns the credential entry corresponding to the ID
+func (r *VaultRepository) GetByIdAndUser(ctx context.Context, ID int, userID int) (models.Credentials, error) {
 	// Get entry of a service
 	var credentials models.Credentials
-	if err := r.conn.QueryRowContext(ctx, selectCredentialsByUserAndServiceQuery, userID, serviceName).Scan(
+	if err := r.conn.QueryRowContext(ctx, selectCredentialsByIdAndUserQuery, ID, userID).Scan(
 		&credentials.ID,
 		&credentials.UserID,
 		&credentials.ServiceName,
@@ -40,11 +41,11 @@ func (r *VaultRepository) GetCredentialsByUserAndService(ctx context.Context, us
 	return credentials, nil
 }
 
-// Returns the credential entry corresponding to the ID
-func (r *VaultRepository) GetCredentials(ctx context.Context, ID int) (models.Credentials, error) {
+// Returns the credential entry of the service of a user
+func (r *VaultRepository) GetByServiceAndUser(ctx context.Context, serviceName string, userID int) (models.Credentials, error) {
 	// Get entry of a service
 	var credentials models.Credentials
-	if err := r.conn.QueryRowContext(ctx, selectCredentialsByIdQuery, ID).Scan(
+	if err := r.conn.QueryRowContext(ctx, selectCredentialsByServiceAndUserQuery, serviceName, userID).Scan(
 		&credentials.ID,
 		&credentials.UserID,
 		&credentials.ServiceName,
@@ -58,7 +59,7 @@ func (r *VaultRepository) GetCredentials(ctx context.Context, ID int) (models.Cr
 }
 
 // Returns the services associated to a user
-func (r *VaultRepository) GetServicesByUserID(ctx context.Context, ID int) ([]string, error) {
+func (r *VaultRepository) ListServicesByUser(ctx context.Context, userID int) ([]string, error) {
 	//TODO
 
 	return nil, nil

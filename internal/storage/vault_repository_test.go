@@ -39,8 +39,8 @@ func TestVaultRepository_IntegrationFlow(t *testing.T) {
 	repo := setupTestVaultRepository(ctx, t)
 	newCredential := createExampleCredentials(t)
 
-	t.Run("AddCredential_Success", func(t *testing.T) {
-		err := repo.AddCredential(ctx, newCredential)
+	t.Run("Save_Success", func(t *testing.T) {
+		err := repo.Save(ctx, newCredential)
 		
 		if err != nil {
 			t.Fatalf("Error adding credentials: %v", err)
@@ -55,8 +55,38 @@ func TestVaultRepository_IntegrationFlow(t *testing.T) {
 		}
 	})
 
-	t.Run("GetCredentialsByUserAndService_Success", func(t *testing.T) {
-		retrieved, err := repo.GetCredentialsByUserAndService(ctx, newCredential.UserID, newCredential.ServiceName)
+	t.Run("Get_Success", func(t *testing.T) {
+		retrieved, err := repo.GetByIdAndUser(ctx, newCredential.ID, newCredential.UserID)
+		
+		if err != nil {
+			t.Fatalf("Error getting credentials: %v", err)
+		}
+
+		if retrieved.ServiceName != newCredential.ServiceName {
+			t.Errorf("ServiceName mismatch: expected %s, got %s", newCredential.ServiceName, retrieved.ServiceName)
+		}
+	})
+
+	t.Run("GetByIdAndUser_Failure_ID_Not_Existing", func(t *testing.T) {
+		idInexistent := 99999
+		_, err := repo.GetByIdAndUser(ctx, idInexistent, newCredential.UserID)
+		
+		if err == nil {
+			t.Error("Expected error, got none")
+		}
+	})
+
+	t.Run("GetByIdAndUser_Failure_userID_Not_Existing", func(t *testing.T) {
+		idInexistent := 99999
+		_, err := repo.GetByIdAndUser(ctx, newCredential.ID, idInexistent)
+		
+		if err == nil {
+			t.Error("Expected error, got none")
+		}
+	})
+
+	t.Run("GetByUserAndService_Success", func(t *testing.T) {
+		retrieved, err := repo.GetByServiceAndUser(ctx, newCredential.ServiceName, newCredential.UserID)
 		
 		// Verify matching data with example
 		if err != nil {
@@ -72,24 +102,25 @@ func TestVaultRepository_IntegrationFlow(t *testing.T) {
 		}
 	})
 
-	t.Run("GetCredentials_Success", func(t *testing.T) {
-		retrieved, err := repo.GetCredentials(ctx, newCredential.ID)
+	t.Run("GetByUserAndService_Failure_Service_Not_Existing", func(t *testing.T) {
+		serviceInexistent := "gabagool"
+		_, err := repo.GetByServiceAndUser(ctx, serviceInexistent, newCredential.UserID)
 		
-		if err != nil {
-			t.Fatalf("Error getting credentials: %v", err)
-		}
-
-		if retrieved.ServiceName != newCredential.ServiceName {
-			t.Errorf("ServiceName mismatch: expected %s, got %s", newCredential.ServiceName, retrieved.ServiceName)
-		}
-	})
-
-	t.Run("GetCredentials_Failure_ID_Not_Existing", func(t *testing.T) {
-		idInexistent := 99999
-		_, err := repo.GetCredentials(ctx, idInexistent)
-		
+		// Verify matching data with example
 		if err == nil {
 			t.Error("Expected error, got none")
 		}
 	})
+
+	t.Run("GetByUserAndService_Failure_userID_Not_Existing", func(t *testing.T) {
+		idInexistent := 99999
+		_, err := repo.GetByServiceAndUser(ctx, newCredential.ServiceName, idInexistent)
+		
+		// Verify matching data with example
+		if err == nil {
+			t.Error("Expected error, got none")
+		}
+	})
+
+	
 }

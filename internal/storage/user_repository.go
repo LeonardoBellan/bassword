@@ -16,12 +16,12 @@ func NewUserRepository(conn *sql.DB) *UserRepository {
 	return &UserRepository{conn: conn}
 }
 
-func (r *UserRepository) AddUser(ctx context.Context, user *models.User) error {
+func (r *UserRepository) Save(ctx context.Context, user *models.User) error {
 	err := r.conn.QueryRowContext(ctx, upsertUserQuery, user.Email, user.Server_Hash, user.Server_Salt).Scan(&user.ID)
 	return err
 }
 
-func (r *UserRepository) GetUser(ctx context.Context, ID int) (models.User,error) {
+func (r *UserRepository) Get(ctx context.Context, ID int) (models.User,error) {
 	// Get user entry
 	var user models.User
 	if err := r.conn.QueryRowContext(ctx, selectUserByIdQuery, ID).Scan(
