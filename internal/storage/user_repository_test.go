@@ -21,12 +21,12 @@ func createExampleUser(t *testing.T) *models.User {
 }
 
 // SetupTestUserRepository initializes a repository
-func setupTestUserRepository(ctx context.Context, t *testing.T) *UserRepository {
+func setupTestUserRepository(ctx context.Context, t *testing.T) *SQLiteUserRepository {
 	t.Helper()
 
 	// 
 	conn, _, _ := setupInitializedTestDB(ctx, t)
-	repository := NewUserRepository(conn)
+	repository := NewSQLiteUserRepository(conn)
 
 	return repository
 }
@@ -58,6 +58,9 @@ func TestUserRepository_IntegrationFlow(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Error getting user: %v", err)
 		}
+		if retrieved == nil {
+			t.Fatalf("User Not Found")
+		}
 
 		// Verify matching data with example
 		if retrieved.ID != newUser.ID {
@@ -77,10 +80,13 @@ func TestUserRepository_IntegrationFlow(t *testing.T) {
 	t.Run("Get_Failure_ID_Not_Existing", func(t *testing.T) {
 		// Expected failure
 		idInexistent := 99999
-		_, err := repo.Get(ctx, idInexistent)
+		user, err := repo.Get(ctx, idInexistent)
 		
-		if err == nil {
-			t.Error("Expected error, got none")
+		if err != nil {
+        	t.Fatalf("Expected no error, got: %v", err)
 		}
+    	if user != nil {
+        	t.Errorf("Expected user to be nil, got: %+v", user)
+    	}
 	})
 }

@@ -22,11 +22,11 @@ func createExampleCredentials(t *testing.T) *models.Credentials {
 }
 
 // SetupTestUserRepository initializes a repository
-func setupTestVaultRepository(ctx context.Context, t *testing.T) *VaultRepository {
+func setupTestVaultRepository(ctx context.Context, t *testing.T) *SQLiteVaultRepository {
 	t.Helper()
 
 	conn,_,_ := setupInitializedTestDB(ctx,t)
-	repository := NewVaultRepository(conn)
+	repository := NewSQLiteVaultRepository(conn)
 
 	return repository
 }
@@ -55,11 +55,15 @@ func TestVaultRepository_IntegrationFlow(t *testing.T) {
 		}
 	})
 
-	t.Run("Get_Success", func(t *testing.T) {
+	t.Run("GetByIdAndUser_Success", func(t *testing.T) {
 		retrieved, err := repo.GetByIdAndUser(ctx, newCredential.ID, newCredential.UserID)
 		
 		if err != nil {
 			t.Fatalf("Error getting credentials: %v", err)
+		}
+
+		if retrieved == nil {
+			t.Fatalf("User Not Found")
 		}
 
 		if retrieved.ServiceName != newCredential.ServiceName {
@@ -69,20 +73,26 @@ func TestVaultRepository_IntegrationFlow(t *testing.T) {
 
 	t.Run("GetByIdAndUser_Failure_ID_Not_Existing", func(t *testing.T) {
 		idInexistent := 99999
-		_, err := repo.GetByIdAndUser(ctx, idInexistent, newCredential.UserID)
+		credentials, err := repo.GetByIdAndUser(ctx, idInexistent, newCredential.UserID)
 		
-		if err == nil {
-			t.Error("Expected error, got none")
+		if err != nil {
+        	t.Fatalf("Expected no error, got: %v", err)
 		}
+    	if credentials != nil {
+        	t.Errorf("Expected credential to be nil, got: %+v", credentials)
+    	}
 	})
 
 	t.Run("GetByIdAndUser_Failure_userID_Not_Existing", func(t *testing.T) {
 		idInexistent := 99999
-		_, err := repo.GetByIdAndUser(ctx, newCredential.ID, idInexistent)
+		credentials, err := repo.GetByIdAndUser(ctx, newCredential.ID, idInexistent)
 		
-		if err == nil {
-			t.Error("Expected error, got none")
+		if err != nil {
+        	t.Fatalf("Expected no error, got: %v", err)
 		}
+    	if credentials != nil {
+        	t.Errorf("Expected credential to be nil, got: %+v", credentials)
+    	}
 	})
 
 	t.Run("GetByUserAndService_Success", func(t *testing.T) {
@@ -91,6 +101,9 @@ func TestVaultRepository_IntegrationFlow(t *testing.T) {
 		// Verify matching data with example
 		if err != nil {
 			t.Fatalf("Error getting credentials: %v", err)
+		}
+		if retrieved == nil {
+			t.Fatalf("User Not Found")
 		}
 
 		if retrieved.ID != newCredential.ID {
@@ -104,22 +117,28 @@ func TestVaultRepository_IntegrationFlow(t *testing.T) {
 
 	t.Run("GetByUserAndService_Failure_Service_Not_Existing", func(t *testing.T) {
 		serviceInexistent := "gabagool"
-		_, err := repo.GetByServiceAndUser(ctx, serviceInexistent, newCredential.UserID)
+		credentials, err := repo.GetByServiceAndUser(ctx, serviceInexistent, newCredential.UserID)
 		
 		// Verify matching data with example
-		if err == nil {
-			t.Error("Expected error, got none")
+		if err != nil {
+        	t.Fatalf("Expected no error, got: %v", err)
 		}
+    	if credentials != nil {
+        	t.Errorf("Expected credential to be nil, got: %+v", credentials)
+    	}
 	})
 
 	t.Run("GetByUserAndService_Failure_userID_Not_Existing", func(t *testing.T) {
 		idInexistent := 99999
-		_, err := repo.GetByServiceAndUser(ctx, newCredential.ServiceName, idInexistent)
+		credentials, err := repo.GetByServiceAndUser(ctx, newCredential.ServiceName, idInexistent)
 		
 		// Verify matching data with example
-		if err == nil {
-			t.Error("Expected error, got none")
+		if err != nil {
+        	t.Fatalf("Expected no error, got: %v", err)
 		}
+    	if credentials != nil {
+        	t.Errorf("Expected credential to be nil, got: %+v", credentials)
+    	}
 	})
 
 	
