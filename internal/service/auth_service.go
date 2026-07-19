@@ -2,11 +2,9 @@ package service
 
 import (
 	"context"
-
-	"github.com/LeonardoBellan/bassword/internal/models"
 )
 
 type UserRepository interface {
-	Save(ctx context.Context, user *models.User) error
-	Get(ctx context.Context, id int) (*models.User,error)
+	Save(ctx context.Context, user *domain.User) error
+	Get(ctx context.Context, id int) (*domain.User,error)
 }

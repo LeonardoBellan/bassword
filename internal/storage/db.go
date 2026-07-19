@@ -5,11 +5,9 @@ import (
 	"database/sql"
 	"errors"
 
+	"github.com/LeonardoBellan/bassword/internal/domain"
 	_ "github.com/mattn/go-sqlite3"
 )
-
-var ErrDBNotInitialized = errors.New("Database is not initialized")
-var ErrDBAlreadyInitialized = errors.New("Database is already initialized")
 
 func OpenDB(ctx context.Context, dbPath string) (*sql.DB, error) {
 	// Open db connection
@@ -30,9 +28,9 @@ func InitializeDB(ctx context.Context, conn *sql.DB, masterPassword []byte) erro
 	// Verify if db is already initialized
 	err := verifyDB(ctx, conn)
 	if err == nil {
-		return ErrDBAlreadyInitialized
+		return domain.ErrDBAlreadyInitialized
 	}
-	if !errors.Is(err, ErrDBNotInitialized) {
+	if !errors.Is(err, domain.ErrDBNotInitialized) {
 		return err
 	}
 
@@ -67,7 +65,7 @@ func verifyDB(ctx context.Context, conn *sql.DB) error {
 
     // db not initialized
     if count < 2 {
-        return ErrDBNotInitialized
+        return domain.ErrDBNotInitialized
     }
 
 	return nil

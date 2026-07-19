@@ -5,14 +5,14 @@ import (
 	"context"
 	"testing"
 
-	"github.com/LeonardoBellan/bassword/internal/models"
+	"github.com/LeonardoBellan/bassword/internal/domain"
 )
 
 // createExampleUser mock user
-func createExampleUser(t *testing.T) *models.User {
+func createExampleUser(t *testing.T) *domain.User {
 	t.Helper()
 
-	example := &models.User{
+	example := &domain.User{
 		Server_Hash: []byte("hash_example1234"),
 		Server_Salt: []byte("salt_example1234"),
 	}

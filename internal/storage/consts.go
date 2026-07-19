@@ -10,9 +10,9 @@ const (
 
 	createVaultTableSQL = `CREATE TABLE IF NOT EXISTS vault (
             id INTEGER PRIMARY KEY, 
-            user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
+            user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
             service_name TEXT NOT NULL,
-            encrypted_data BLOB,
+            encrypted_data BLOB NOT NULL,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             UNIQUE(user_id, service_name)
         );`

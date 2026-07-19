@@ -6,6 +6,8 @@ import (
 	"errors"
 	"path/filepath"
 	"testing"
+
+	"github.com/LeonardoBellan/bassword/internal/domain"
 )
 
 // setupdTestDB creates and connects to a temporary uninitialized db
@@ -61,7 +63,7 @@ func TestInitializeDB(t *testing.T) {
      	   t.Errorf("Could not insert into 'users' after initialization: %v", err)
     	}
 
-    	_, err = conn.Exec("INSERT INTO vault (service_name) VALUES ('facebook')")
+    	_, err = conn.Exec("INSERT INTO vault (service_name, encrypted_data, user_id) VALUES ('service','encrypted-secret',1)")
     	if err != nil {
      	   t.Errorf("Could not insert into 'vault' after initialization: %v", err)
     	}
@@ -71,8 +73,8 @@ func TestInitializeDB(t *testing.T) {
 		ctx := context.Background()
 		conn, _, masterPassword := setupInitializedTestDB(ctx,t)
 
-		if err := InitializeDB(ctx,conn,masterPassword); !errors.Is(err,ErrDBAlreadyInitialized) {
-			t.Errorf("Expected %v, got: %v", ErrDBAlreadyInitialized,err)
+		if err := InitializeDB(ctx,conn,masterPassword); !errors.Is(err,domain.ErrDBAlreadyInitialized) {
+			t.Errorf("Expected %v, got: %v", domain.ErrDBAlreadyInitialized,err)
 		}
 	})
 
