@@ -16,29 +16,30 @@ type VaultRepository interface {
 type VaultService struct {
 	repo VaultRepository
 }
+
 func NewVaultService(r VaultRepository) *VaultService {
 	return &VaultService{repo:r}
 }
 
-func (s *VaultService) Save(ctx context.Context, credentials *domain.Credentials) error{
-	// Verify input
-	if !credentials.IsValid() {
-		return domain.ErrInvalidInput
+func (s *VaultService) Save(ctx context.Context, userID int, serviceName string, encryptedData []byte) error{	
+	credentials := domain.Credentials {
+		UserID: userID,
+		ServiceName: serviceName,
+		EncryptedData: encryptedData,
 	}
+
+	if err := credentials.IsValid(); err != nil {
+        return err
+    }
 	
-	if err := s.repo.Save(ctx, credentials); err != nil {
+	if err := s.repo.Save(ctx, &credentials); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (s *VaultService) GetForService(ctx context.Context, serviceName string, userID int) (*domain.Credentials, error) {
-	// Verify input
-	if serviceName == "" || userID <= 0 {
-		return nil, domain.ErrInvalidInput
-	}
-	
+func (s *VaultService) GetForService(ctx context.Context, serviceName string, userID int) (*domain.Credentials, error) {	
 	credentials,err := s.repo.GetByServiceAndUser(ctx, serviceName, userID)
 	if err != nil {
 		if errors.Is(err, domain.ErrNotFound) {

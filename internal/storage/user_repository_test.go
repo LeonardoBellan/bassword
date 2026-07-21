@@ -13,8 +13,8 @@ func createExampleUser(t *testing.T) *domain.User {
 	t.Helper()
 
 	example := &domain.User{
-		Server_Hash: []byte("hash_example1234"),
-		Server_Salt: []byte("salt_example1234"),
+		ServerHash: []byte("hash_example1234"),
+		ServerSalt: []byte("salt_example1234"),
 	}
 
 	return example
@@ -69,11 +69,11 @@ func TestUserRepository_IntegrationFlow(t *testing.T) {
 		if retrieved.Email != newUser.Email {
 			t.Errorf("Email mismatch: expected %v, got %v", newUser.Email, retrieved.Email)
 		}
-		if !bytes.Equal(retrieved.Server_Hash, newUser.Server_Hash) {
-			t.Errorf("Corrupted encrypted data or not correct. Expected %v, got %v", newUser.Server_Hash, retrieved.Server_Hash)
+		if !bytes.Equal(retrieved.ServerHash, newUser.ServerHash) {
+			t.Errorf("Corrupted encrypted data or not correct. Expected %v, got %v", newUser.ServerHash, retrieved.ServerHash)
 		}
-		if !bytes.Equal(retrieved.Server_Salt, newUser.Server_Salt) {
-			t.Errorf("Corrupted encrypted data or not correct. Expected %v, got %v", newUser.Server_Salt, retrieved.Server_Salt)
+		if !bytes.Equal(retrieved.ServerSalt, newUser.ServerSalt) {
+			t.Errorf("Corrupted encrypted data or not correct. Expected %v, got %v", newUser.ServerSalt, retrieved.ServerSalt)
 		}
 	})
 

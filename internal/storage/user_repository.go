@@ -16,7 +16,7 @@ func NewSQLiteUserRepository(conn *sql.DB) *SQLiteUserRepository {
 }
 
 func (r *SQLiteUserRepository) Save(ctx context.Context, user *domain.User) error {
-	err := r.conn.QueryRowContext(ctx, upsertUserQuery, user.Email, user.Server_Hash, user.Server_Salt).Scan(&user.ID)
+	err := r.conn.QueryRowContext(ctx, upsertUserQuery, user.Email, user.ServerHash, user.ServerSalt).Scan(&user.ID)
 	return err
 }
 
@@ -26,8 +26,26 @@ func (r *SQLiteUserRepository) Get(ctx context.Context, id int) (*domain.User,er
 	if err := r.conn.QueryRowContext(ctx, selectUserByIdQuery, id).Scan(
 		&user.ID,
 		&user.Email,
-		&user.Server_Hash,
-		&user.Server_Salt,
+		&user.ServerHash,
+		&user.ServerSalt,
+	); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	return &user, nil
+}
+
+func (r *SQLiteUserRepository) GetByEmail(ctx context.Context, email string) (*domain.User,error) {
+	// Get user entry
+	var user domain.User
+	if err := r.conn.QueryRowContext(ctx, selectUserByEmailQuery, email).Scan(
+		&user.ID,
+		&user.Email,
+		&user.ServerHash,
+		&user.ServerSalt,
 	); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil

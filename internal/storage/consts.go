@@ -31,6 +31,10 @@ const (
         SELECT id, email, server_hash, server_salt
         FROM users WHERE id = ?`
 
+	selectUserByEmailQuery = `
+        SELECT id, email, server_hash, server_salt
+        FROM users WHERE email = ?`
+
 	// Credentials
 	upsertCredentialsQuery = `
         INSERT INTO vault (user_id, service_name, encrypted_data)

@@ -4,10 +4,12 @@ import (
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/rand"
+	"crypto/subtle"
 	"errors"
 	"io"
 	"runtime"
 
+	"github.com/LeonardoBellan/bassword/internal/domain"
 	"golang.org/x/crypto/argon2"
 )
 
@@ -20,6 +22,31 @@ func Wipe(slice []byte) {
         slice[i] = 0
     }
     runtime.KeepAlive(slice)
+}
+
+func HashSecret(secret []byte) ([]byte, []byte, error) {
+	// Salt generation
+	salt := make([]byte, 16)
+	if _,err := rand.Read(salt); err != nil {
+		return nil, nil, err
+	}
+
+	// Hash generation
+	hash := argon2.IDKey(secret, salt, 1, 64*1024, 4, 32)
+
+	return hash, salt, nil
+}
+
+func VerifySecret(providedHash []byte, expectedHash []byte, salt []byte) error {
+	// Compute given secret
+	computedHash := argon2.IDKey(providedHash, salt, 1, 64*1024, 4, 32)
+
+	// Compare hashes
+	if subtle.ConstantTimeCompare(computedHash, expectedHash) != 1 {
+		return domain.ErrMismatchedSecret
+	}
+
+	return nil
 }
 
 /* Derives a 32-bit key from the master password */
@@ -41,7 +68,7 @@ func Encrypt(plaintext []byte, masterPassword []byte, salt []byte) ([]byte,error
 	if err != nil { return nil,err }
 	Wipe(key)	// Clean key from memory
 
-	//Generate nonce
+	// Generate nonce
 	nonce := make([]byte, aesgcm.NonceSize())
 	if _, err := io.ReadFull(rand.Reader, nonce); err != nil {
 		return nil,err
