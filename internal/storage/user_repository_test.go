@@ -3,6 +3,7 @@ package storage
 import (
 	"bytes"
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/LeonardoBellan/bassword/internal/domain"
@@ -13,8 +14,13 @@ func createExampleUser(t *testing.T) *domain.User {
 	t.Helper()
 
 	example := &domain.User{
+		Email: "username@example.com",
 		ServerHash: []byte("hash_example1234"),
 		ServerSalt: []byte("salt_example1234"),
+	}
+
+	if err := example.IsValid(); err != nil {
+		t.Fatal("Invalid example user")
 	}
 
 	return example
@@ -51,6 +57,7 @@ func TestUserRepository_IntegrationFlow(t *testing.T) {
 		}
 	})
 
+	/**** Get ****/
 	t.Run("Get_Success", func(t *testing.T) {
 		// Get user by ID
 		retrieved, err := repo.Get(ctx, newUser.ID)
@@ -80,13 +87,44 @@ func TestUserRepository_IntegrationFlow(t *testing.T) {
 	t.Run("Get_Failure_ID_Not_Existing", func(t *testing.T) {
 		// Expected failure
 		idInexistent := 99999
-		user, err := repo.Get(ctx, idInexistent)
+		_, err := repo.Get(ctx, idInexistent)
+		
+		if !errors.Is(err, domain.ErrNotFound) {
+			t.Errorf("Expected %v, got %v",domain.ErrNotFound,err)
+		}
+	})
+
+	/**** Get by email ****/
+	t.Run("GetByEmail_Success", func(t *testing.T) {
+		// Get user by email
+		retrieved, err := repo.GetByEmail(ctx, newUser.Email)
 		
 		if err != nil {
-        	t.Fatalf("Expected no error, got: %v", err)
+			t.Fatalf("Error getting user: %v", err)
 		}
-    	if user != nil {
-        	t.Errorf("Expected user to be nil, got: %+v", user)
-    	}
+
+		// Verify matching data with example
+		if retrieved.ID != newUser.ID {
+			t.Errorf("ID mismatch: expected %d, got %d", newUser.ID, retrieved.ID)
+		}
+		if retrieved.Email != newUser.Email {
+			t.Errorf("Email mismatch: expected %v, got %v", newUser.Email, retrieved.Email)
+		}
+		if !bytes.Equal(retrieved.ServerHash, newUser.ServerHash) {
+			t.Errorf("Corrupted encrypted data or not correct. Expected %v, got %v", newUser.ServerHash, retrieved.ServerHash)
+		}
+		if !bytes.Equal(retrieved.ServerSalt, newUser.ServerSalt) {
+			t.Errorf("Corrupted encrypted data or not correct. Expected %v, got %v", newUser.ServerSalt, retrieved.ServerSalt)
+		}
+	})
+
+	t.Run("GetByEmail_Failure_Email_Not_Existing", func(t *testing.T) {
+		// Expected failure
+		emailInexistent := "wrongusername@example.com"
+		_, err := repo.GetByEmail(ctx, emailInexistent)
+		
+		if !errors.Is(err, domain.ErrNotFound) {
+			t.Errorf("Expected %v, got %v",domain.ErrNotFound,err)
+		}
 	})
 }

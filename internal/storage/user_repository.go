@@ -30,7 +30,7 @@ func (r *SQLiteUserRepository) Get(ctx context.Context, id int) (*domain.User,er
 		&user.ServerSalt,
 	); err != nil {
 		if err == sql.ErrNoRows {
-			return nil, nil
+			return nil, domain.ErrNotFound
 		}
 		return nil, err
 	}
@@ -48,7 +48,7 @@ func (r *SQLiteUserRepository) GetByEmail(ctx context.Context, email string) (*d
 		&user.ServerSalt,
 	); err != nil {
 		if err == sql.ErrNoRows {
-			return nil, nil
+			return nil, domain.ErrNotFound
 		}
 		return nil, err
 	}
