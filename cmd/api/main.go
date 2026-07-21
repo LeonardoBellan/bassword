@@ -8,21 +8,18 @@ import (
 	"path/filepath"
 
 	"github.com/LeonardoBellan/bassword/internal/api"
-	"github.com/LeonardoBellan/bassword/internal/db"
+	"github.com/LeonardoBellan/bassword/internal/handlers"
+	"github.com/LeonardoBellan/bassword/internal/service"
+	"github.com/LeonardoBellan/bassword/internal/storage"
 )
 
 func main() {
 
 	// Dependencies
-	// TODO: environment variables
-	
-	path := 
+	ctx := context.Background()
+	// TODO: environment variables for db path etc.
 
-	//TODO: DB SETUP
-	//TODO: SERVICE SETUP es. service.NewCredentialService(db)
-	//TODO: HANDLER SETUP es. handlers.NewCredentialHandler(credService)
-
-	// Use same default path as CLI
+	// db setup
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
 		homeDir = "."
@@ -30,18 +27,28 @@ func main() {
 	configDir := filepath.Join(homeDir, ".bassword")
 	dbPath := filepath.Join(configDir, "passwords.db")
 
-	// Try to open DB; if not initialized, fail with clear message
-	ctx := context.Background()
-	if err := db.OpenDB(ctx, dbPath); err != nil {
-		if err == db.ErrDBNotInitialized {
-			log.Fatalf("Database not initialized at %s. Run: bassword init --db-config %s\n", dbPath, dbPath)
-		}
-		log.Fatalf("Failed to open database: %v\n", err)
+	conn,err := storage.OpenDB(ctx, dbPath)
+	if err != nil { /* TODO Gestisci errore */ }
+	defer conn.Close()
+
+	if err := storage.InitializeDB(ctx, conn); err != nil {
+		log.Println("Errore inizializzazione db", err)
 	}
-	defer db.CloseDB()
+
+	// repository setup
+	//userRepo := storage.NewSQLiteUserRepository(conn)
+	vaultRepo := storage.NewSQLiteVaultRepository(conn)
+
+	// service setup
+	//userService := service.NewUserService(userRepo)
+	vaultService := service.NewVaultService(vaultRepo)
+
+	// handler setup
+	//userHandler := service.NewUserHandler(userService)
+	vaultHandler := handlers.NewVaultHandler(vaultService)
 
 	// Router setup
-	router := api.SetupRouter(credHandler)
+	router := api.SetupRouter(ctx, /*userHandler,*/ vaultHandler)
 
 	//TODO: Server setup (addr, handler, read/write timeout, Idle timeOut)
 
@@ -52,5 +59,5 @@ func main() {
 		log.Fatal(err)
 	}
 
-	//TODO: server shutdown and db close
+	//TODO: server shutdown
 }
