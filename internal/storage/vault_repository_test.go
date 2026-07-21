@@ -26,7 +26,7 @@ func createExampleCredentials(t *testing.T) *domain.Credentials {
 func setupTestVaultRepository(ctx context.Context, t *testing.T) *SQLiteVaultRepository {
 	t.Helper()
 
-	conn,_,_ := setupInitializedTestDB(ctx,t)
+	conn,_ := setupInitializedTestDB(ctx,t)
 	repository := NewSQLiteVaultRepository(conn)
 
 	return repository
@@ -129,6 +129,4 @@ func TestVaultRepository_IntegrationFlow(t *testing.T) {
 			t.Errorf("Expected %v, got %v",domain.ErrNotFound,err)
 		}
 	})
-
-	
 }

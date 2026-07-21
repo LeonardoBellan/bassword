@@ -16,6 +16,8 @@ func main() {
 	// Dependencies
 	// TODO: environment variables
 	
+	path := 
+
 	//TODO: DB SETUP
 	//TODO: SERVICE SETUP es. service.NewCredentialService(db)
 	//TODO: HANDLER SETUP es. handlers.NewCredentialHandler(credService)

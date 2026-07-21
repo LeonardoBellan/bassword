@@ -36,15 +36,14 @@ func setupTestDB(ctx context.Context,t *testing.T) (*sql.DB, string) {
 	return conn, dbPath
 }
 
-func setupInitializedTestDB(ctx context.Context, t *testing.T) (*sql.DB, string, []byte) {
+func setupInitializedTestDB(ctx context.Context, t *testing.T) (*sql.DB, string) {
 	t.Helper()
 	
 	conn, path := setupTestDB(ctx,t)
-	masterPassword := []byte("correct-horse-battery-staple")
-	if err := InitializeDB(ctx,conn,masterPassword); err != nil {
+	if err := InitializeDB(ctx,conn); err != nil {
 		t.Fatalf("InitializeDB failed: %v", err)
 	}
-	return conn, path, masterPassword
+	return conn, path
 }
 
 func TestInitializeDB(t *testing.T) {
@@ -52,8 +51,7 @@ func TestInitializeDB(t *testing.T) {
 		ctx := context.Background()
 		conn, _ := setupTestDB(ctx,t)
 
-		masterPassword := []byte("correct-horse-battery-staple")
-		if err := InitializeDB(ctx,conn,masterPassword); err != nil {
+		if err := InitializeDB(ctx,conn); err != nil {
 			t.Fatalf("InitializeDB failed: %v", err)
 		}
 
@@ -71,9 +69,9 @@ func TestInitializeDB(t *testing.T) {
 
 	t.Run("Failure_Second_Initialization", func(t * testing.T){
 		ctx := context.Background()
-		conn, _, masterPassword := setupInitializedTestDB(ctx,t)
+		conn, _ := setupInitializedTestDB(ctx,t)
 
-		if err := InitializeDB(ctx,conn,masterPassword); !errors.Is(err,domain.ErrDBAlreadyInitialized) {
+		if err := InitializeDB(ctx,conn); !errors.Is(err,domain.ErrDBAlreadyInitialized) {
 			t.Errorf("Expected %v, got: %v", domain.ErrDBAlreadyInitialized,err)
 		}
 	})
@@ -84,10 +82,9 @@ func TestInitializeDB(t *testing.T) {
 
 		// Setup with base context
 		conn, _ := setupTestDB(context.Background(), t) 
-   		masterPassword := []byte("correct-horse-battery-staple")
-		
+
 		// Initialization with cancelled context
-		err := InitializeDB(ctx, conn, masterPassword)
+		err := InitializeDB(ctx, conn)
 
     	if err == nil {
         	t.Error("Expected InitializeDB to fail with a cancelled context, got nil")
@@ -100,7 +97,7 @@ func TestInitializeDB(t *testing.T) {
 func TestOpenDB(t *testing.T) {
 	t.Run("Success_After_Initialization", func(t *testing.T) {
 		ctx := context.Background()
-		_, path, _ := setupInitializedTestDB(ctx,t)
+		_, path := setupInitializedTestDB(ctx,t)
 
 		conn, err := OpenDB(ctx,path)
 		if err != nil { t.Fatalf("Could not open initialized db, got: %v", err) }
@@ -117,7 +114,7 @@ func TestOpenDB(t *testing.T) {
 		cancel()
 
 		// Setup with base context
-		_, path, _ := setupInitializedTestDB(context.Background(), t) 
+		_, path := setupInitializedTestDB(context.Background(), t) 
 
 		// Initialization with cancelled context
 		conn, err := OpenDB(ctx,path)

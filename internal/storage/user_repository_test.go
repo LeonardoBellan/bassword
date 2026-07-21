@@ -25,7 +25,7 @@ func setupTestUserRepository(ctx context.Context, t *testing.T) *SQLiteUserRepos
 	t.Helper()
 
 	// 
-	conn, _, _ := setupInitializedTestDB(ctx, t)
+	conn, _ := setupInitializedTestDB(ctx, t)
 	repository := NewSQLiteUserRepository(conn)
 
 	return repository

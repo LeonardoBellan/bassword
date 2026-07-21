@@ -24,7 +24,7 @@ func OpenDB(ctx context.Context, dbPath string) (*sql.DB, error) {
 }
 
 // InitializeDB initializes the database with the master password
-func InitializeDB(ctx context.Context, conn *sql.DB, masterPassword []byte) error {
+func InitializeDB(ctx context.Context, conn *sql.DB) error {
 	// Verify if db is already initialized
 	err := verifyDB(ctx, conn)
 	if err == nil {
