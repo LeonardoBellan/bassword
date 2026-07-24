@@ -28,25 +28,18 @@ func NewAuthService(r UserRepository, tm *crypto.TokenManager) *AuthService {
 }
 
 func (s *AuthService) Register(ctx context.Context, email string, authHash []byte) error {
+	
+	// TODO - Check email existence
 
-	serverHash, salt, err := crypto.HashSecret(authHash)
+	// Hash
+	serverHash, serverSalt, err := crypto.HashSecret(authHash)
+	if err != nil { return err }
+	
+	// Create user
+	user,err := domain.NewUser(email,serverHash,serverSalt)
 	if err != nil { return err }
 
-	user := domain.User {
-		Email: email,
-		ServerHash: serverHash,
-		ServerSalt: salt,
-	}
-
-	if err := user.IsValid(); err != nil {
-        return err
-    }
-
-	if err := s.repo.Save(ctx, &user); err != nil {
-		return err
-	}
-
-	return nil
+	return s.repo.Save(ctx, user)
 }
 
 
@@ -59,6 +52,5 @@ func (s *AuthService) Authenticate(ctx context.Context, email string, authHash [
 		return "",err
 	}
 
-	token, err := s.tm.GenerateToken(user.ID, 15*time.Minute)
-	return token, nil
+	return s.tm.GenerateToken(user.ID, 15*time.Minute)
 }

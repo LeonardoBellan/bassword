@@ -11,16 +11,21 @@ type Credentials struct {
 	EncryptedData []byte    `json:"encrypted_data"` // Nonce + Username + Password
 	CreatedAt     time.Time `json:"created_at"`
 }
-func (c *Credentials) IsValid() error {
-	if c.ServiceName == "" {
-		return ErrEmptyServiceName
+
+func NewCredentials(userID int, serviceName string, encryptedData []byte) (*Credentials,error) {
+	if serviceName == "" {
+		return nil, ErrEmptyServiceName
 	}
-	if len(c.EncryptedData) <= 0 {
-		return ErrEmptyEncryptedData
+	if len(encryptedData) <= 0 {
+		return nil, ErrEmptyEncryptedData
 	}
-	if c.UserID <= 0 {
-		return ErrMissingUserID
+	if userID <= 0 {
+		return nil, ErrMissingUserID
 	}
 
-	return nil
+	return &Credentials{
+		UserID: userID,
+		ServiceName: serviceName,
+		EncryptedData: encryptedData,
+	}, nil
 }

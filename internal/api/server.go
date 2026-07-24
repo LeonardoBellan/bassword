@@ -2,7 +2,6 @@ package api
 
 import (
 	"context"
-	"net/http"
 
 	"github.com/LeonardoBellan/bassword/internal/crypto"
 	"github.com/LeonardoBellan/bassword/internal/handlers"
@@ -22,9 +21,6 @@ func SetupRouter(ctx context.Context, tm *crypto.TokenManager, authHandler *hand
 	r.Route("/api/v1", func(r chi.Router) {
 
 		// Public
-		r.Get("/ping", func(w http.ResponseWriter, r *http.Request) {
-			w.Write([]byte("pong"))
-		})
 		r.Post("/register", authHandler.HandleRegister)		// POST /api/v1/register
 		r.Post("/login", authHandler.HandleLogin)			// POST /api/v1/login
 

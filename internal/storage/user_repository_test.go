@@ -10,20 +10,10 @@ import (
 )
 
 // createExampleUser mock user
-func createExampleUser(t *testing.T) *domain.User {
+func createExampleUser(t *testing.T) (*domain.User, error) {
 	t.Helper()
 
-	example := &domain.User{
-		Email: "username@example.com",
-		ServerHash: []byte("hash_example1234"),
-		ServerSalt: []byte("salt_example1234"),
-	}
-
-	if err := example.IsValid(); err != nil {
-		t.Fatal("Invalid example user")
-	}
-
-	return example
+	return domain.NewUser("username@example.com", []byte("hash_example1234"), []byte("salt_example1234"))
 }
 
 // SetupTestUserRepository initializes a repository
@@ -42,7 +32,8 @@ func TestUserRepository_IntegrationFlow(t *testing.T) {
 
 	// Setup
 	repo := setupTestUserRepository(ctx, t)
-	newUser := createExampleUser(t)
+	newUser, err  := createExampleUser(t)
+	if err != nil { t.Fatalf("Error creating example user: %v", err) }
 
 	t.Run("Save_Success", func(t *testing.T) {
 		// Add user

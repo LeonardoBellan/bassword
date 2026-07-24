@@ -22,21 +22,11 @@ func NewVaultService(r VaultRepository) *VaultService {
 }
 
 func (s *VaultService) Save(ctx context.Context, userID int, serviceName string, encryptedData []byte) error{	
-	credentials := domain.Credentials {
-		UserID: userID,
-		ServiceName: serviceName,
-		EncryptedData: encryptedData,
-	}
 
-	if err := credentials.IsValid(); err != nil {
-        return err
-    }
-	
-	if err := s.repo.Save(ctx, &credentials); err != nil {
-		return err
-	}
+	credentials, err := domain.NewCredentials(userID, serviceName, encryptedData)
+	if err != nil { return err }
 
-	return nil
+	return s.repo.Save(ctx, credentials)
 }
 
 func (s *VaultService) GetForService(ctx context.Context, serviceName string, userID int) (*domain.Credentials, error) {	

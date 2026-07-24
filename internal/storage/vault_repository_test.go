@@ -10,16 +10,10 @@ import (
 )
 
 // createExampleCredentials mock credentials
-func createExampleCredentials(t *testing.T) *domain.Credentials {
+func createExampleCredentials(t *testing.T) (*domain.Credentials, error) {
 	t.Helper()
 
-	example := &domain.Credentials{
-		UserID: 1,
-		ServiceName: "service_example",
-		EncryptedData: []byte("crypted_secret"),
-	}
-
-	return example
+	return domain.NewCredentials(1, "service_example", []byte("crypted_secret"))
 }
 
 // SetupTestUserRepository initializes a repository
@@ -32,13 +26,13 @@ func setupTestVaultRepository(ctx context.Context, t *testing.T) *SQLiteVaultRep
 	return repository
 }
 
-
 func TestVaultRepository_IntegrationFlow(t *testing.T) {
 	ctx := context.Background()
 
 	// Setup
 	repo := setupTestVaultRepository(ctx, t)
-	newCredential := createExampleCredentials(t)
+	newCredential, err := createExampleCredentials(t)
+	if err != nil { t.Fatalf("Error creating example credentials: %v", err) }
 
 	t.Run("Save_Success", func(t *testing.T) {
 		err := repo.Save(ctx, newCredential)
