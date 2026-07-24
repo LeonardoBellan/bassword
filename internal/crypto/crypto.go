@@ -37,7 +37,7 @@ func HashSecret(secret []byte) ([]byte, []byte, error) {
 	return hash, salt, nil
 }
 
-func VerifySecret(providedHash []byte, expectedHash []byte, salt []byte) error {
+func VerifyHash(providedHash []byte, expectedHash []byte, salt []byte) error {
 	// Compute given secret
 	computedHash := argon2.IDKey(providedHash, salt, 1, 64*1024, 4, 32)
 

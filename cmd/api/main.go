@@ -2,53 +2,69 @@ package main
 
 import (
 	"context"
+	"errors"
 	"log"
 	"net/http"
 	"os"
 	"path/filepath"
 
 	"github.com/LeonardoBellan/bassword/internal/api"
+	"github.com/LeonardoBellan/bassword/internal/crypto"
+	"github.com/LeonardoBellan/bassword/internal/domain"
 	"github.com/LeonardoBellan/bassword/internal/handlers"
 	"github.com/LeonardoBellan/bassword/internal/service"
 	"github.com/LeonardoBellan/bassword/internal/storage"
+	"github.com/joho/godotenv"
 )
 
 func main() {
 
-	// Dependencies
+	// Environment Setup
 	ctx := context.Background()
-	// TODO: environment variables for db path etc.
+	err := godotenv.Load()
+    if err != nil {
+    	log.Fatal(err)
+    }
 
-	// db setup
+	// Token manager setup
+	jwtKey := os.Getenv("JWT_KEY")
+	tm := crypto.NewTokenManager(jwtKey)
+
+	// determine db path
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
 		homeDir = "."
 	}
-	configDir := filepath.Join(homeDir, ".bassword")
-	dbPath := filepath.Join(configDir, "passwords.db")
+	configPath := os.Getenv("DB_PATH")
+	dbPath := filepath.Join(homeDir, configPath)
 
+	// db connection
 	conn,err := storage.OpenDB(ctx, dbPath)
-	if err != nil { /* TODO Gestisci errore */ }
+	if err != nil { log.Fatalf("failed to open database: %v", err) }
 	defer conn.Close()
 
 	if err := storage.InitializeDB(ctx, conn); err != nil {
-		log.Println("Errore inizializzazione db", err)
+		if !errors.Is(err, domain.ErrDBAlreadyInitialized) {
+			log.Fatalf("failed to initialize db: %v", err)
+		}
+		
+		log.Print("Db already initialized")
 	}
 
 	// repository setup
-	//userRepo := storage.NewSQLiteUserRepository(conn)
+	userRepo := storage.NewSQLiteUserRepository(conn)
 	vaultRepo := storage.NewSQLiteVaultRepository(conn)
 
 	// service setup
-	//userService := service.NewUserService(userRepo)
+	authService := service.NewAuthService(userRepo, tm)
 	vaultService := service.NewVaultService(vaultRepo)
 
 	// handler setup
-	//userHandler := service.NewUserHandler(userService)
+	authHandler := handlers.NewAuthHandler(authService)
 	vaultHandler := handlers.NewVaultHandler(vaultService)
 
 	// Router setup
-	router := api.SetupRouter(ctx, /*userHandler,*/ vaultHandler)
+	router := api.SetupRouter(ctx, tm, authHandler, vaultHandler)
 
 	//TODO: Server setup (addr, handler, read/write timeout, Idle timeOut)
 

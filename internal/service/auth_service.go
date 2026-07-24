@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"time"
 
 	"github.com/LeonardoBellan/bassword/internal/crypto"
 	"github.com/LeonardoBellan/bassword/internal/domain"
@@ -13,15 +14,20 @@ type UserRepository interface {
 	GetByEmail(ctx context.Context, email string) (*domain.User, error)
 }
 
-type UserService struct {
+type AuthService struct {
 	repo UserRepository
+	tm *crypto.TokenManager
 }
 
-func NewUserService(r UserRepository) *UserService {
-	return &UserService{repo:r}
+func NewAuthService(r UserRepository, tm *crypto.TokenManager) *AuthService {
+	return &AuthService{
+		repo:r,
+		tm: tm,
+	}
+
 }
 
-func (s *UserService) Register(ctx context.Context, email string, authHash []byte) error {
+func (s *AuthService) Register(ctx context.Context, email string, authHash []byte) error {
 
 	serverHash, salt, err := crypto.HashSecret(authHash)
 	if err != nil { return err }
@@ -44,14 +50,15 @@ func (s *UserService) Register(ctx context.Context, email string, authHash []byt
 }
 
 
-func (s *UserService) Authenticate(ctx context.Context, email string, authHash []byte) (int,error) {
+func (s *AuthService) Authenticate(ctx context.Context, email string, authHash []byte) (string, error) {
 	// Get user info on db	
 	user, err := s.repo.GetByEmail(ctx, email)
-	if err != nil { return 0,err }
+	if err != nil { return "",err }
 
-	if err := crypto.VerifySecret(authHash, user.ServerHash, user.ServerSalt); err != nil {
-		return 0,err
+	if err := crypto.VerifyHash(authHash, user.ServerHash, user.ServerSalt); err != nil {
+		return "",err
 	}
 
-	return user.ID, nil
+	token, err := s.tm.GenerateToken(user.ID, 15*time.Minute)
+	return token, nil
 }

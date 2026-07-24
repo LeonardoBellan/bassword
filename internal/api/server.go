@@ -4,12 +4,13 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/LeonardoBellan/bassword/internal/crypto"
 	"github.com/LeonardoBellan/bassword/internal/handlers"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 )
 
-func SetupRouter(ctx context.Context, /* userHandler *handlers.userHandler,*/ vaultHandler *handlers.VaultHandler) *chi.Mux {
+func SetupRouter(ctx context.Context, tm *crypto.TokenManager, authHandler *handlers.AuthHandler, vaultHandler *handlers.VaultHandler) *chi.Mux {
 	r := chi.NewRouter()
 
 	// Middleware
@@ -24,17 +25,17 @@ func SetupRouter(ctx context.Context, /* userHandler *handlers.userHandler,*/ va
 		r.Get("/ping", func(w http.ResponseWriter, r *http.Request) {
 			w.Write([]byte("pong"))
 		})
-		//r.Post("/register", userHandler.HandleRegister)	// POST /api/v1/register
-		//r.Post("/login", userHandler.HandleLogin)		// POST /api/v1/login
+		r.Post("/register", authHandler.HandleRegister)		// POST /api/v1/register
+		r.Post("/login", authHandler.HandleLogin)			// POST /api/v1/login
 
 		// Protected
 		r.Route("/credentials", func(r chi.Router) {
-			// r.Use(authMiddleware)
+			r.Use(AuthMiddleware(tm))
 
-			r.Post("/", vaultHandler.HandleCreate)       // POST /api/v1/credentials
-			//r.Get("/", vaultHandler.HandleList)          // GET /api/v1/credentials
-			r.Get("/{service}", vaultHandler.HandleGetByService)   // GET /api/v1/credentials/{service}
-			//r.Delete("/{id}", vaultHandler.HandleDelete) // DELETE /api/v1/credentials/{id}
+			r.Post("/", vaultHandler.HandleCreate)       			// POST /api/v1/credentials
+			//r.Get("/", vaultHandler.HandleList)          			// GET /api/v1/credentials
+			r.Get("/{service}", vaultHandler.HandleGetByService)   	// GET /api/v1/credentials/{service}
+			//r.Delete("/{id}", vaultHandler.HandleDelete) 			// DELETE /api/v1/credentials/{id}
 		})
 	})
 

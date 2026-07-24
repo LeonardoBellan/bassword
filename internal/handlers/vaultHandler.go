@@ -28,12 +28,10 @@ type CredentialsPayload struct {
 }
 
 func (h *VaultHandler) HandleCreate(w http.ResponseWriter, r *http.Request) {
-	r.Body = http.MaxBytesReader(w, r.Body, 1048576)
 	ctx := r.Context()
+	r.Body = http.MaxBytesReader(w, r.Body, 1048576)
 
-	
-	// TODO - Get UserID from authMiddleware
-	userID := 1
+	userID := r.Context().Value("user_id").(int)
 	
 	// Decode body
 	var req CredentialsPayload
@@ -47,7 +45,7 @@ func (h *VaultHandler) HandleCreate(w http.ResponseWriter, r *http.Request) {
 		RespondWithError(w, http.StatusBadRequest, "Field 'service_name' is required")
 		return
 	}
-	if len(req.EncryptedData) <= 0 {
+	if len(req.EncryptedData) == 0 {
 		RespondWithError(w, http.StatusBadRequest, "Field 'encrypted_data' is required")
 		return
 	}
@@ -68,8 +66,7 @@ func (h *VaultHandler) HandleCreate(w http.ResponseWriter, r *http.Request) {
 func (h *VaultHandler) HandleGetByService(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	//TODO - Get user ID from authMiddleware
-	userID := 1
+	userID := r.Context().Value("user_id").(int)
 	serviceName := chi.URLParam(r, "service")
 
 	if serviceName == "" {
