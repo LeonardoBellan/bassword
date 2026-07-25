@@ -40,6 +40,15 @@ func (s *AuthService) Register(ctx context.Context, email string, authHash []byt
 	user,err := domain.NewUser(email,serverHash,serverSalt)
 	if err != nil { return err }
 
+	if err := s.repo.Save(ctx, user); err != nil {
+		if errors.Is(err, domain.ErrConflict){
+			return domain.ErrUserExists
+		}
+
+		return err
+	}
+
+
 	return s.repo.Save(ctx, user)
 }
 

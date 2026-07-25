@@ -3,8 +3,10 @@ package storage
 import (
 	"context"
 	"database/sql"
+	"errors"
 
 	"github.com/LeonardoBellan/bassword/internal/domain"
+	"github.com/mattn/go-sqlite3"
 )
 
 type SQLiteUserRepository struct {
@@ -16,8 +18,23 @@ func NewSQLiteUserRepository(conn *sql.DB) *SQLiteUserRepository {
 }
 
 func (r *SQLiteUserRepository) Save(ctx context.Context, user *domain.User) error {
-	err := r.conn.QueryRowContext(ctx, upsertUserQuery, user.Email, user.ServerHash, user.ServerSalt).Scan(&user.ID)
-	return err
+	err := r.conn.QueryRowContext(ctx, insertUserQuery, user.Email, user.ServerHash, user.ServerSalt).Scan(&user.ID)
+	if err != nil {
+		var sqliteErr sqlite3.Error
+        	if errors.As(err, &sqliteErr) {
+         	   if sqliteErr.ExtendedCode == sqlite3.ErrConstraintUnique {
+         	       return domain.ErrConflict
+         	}
+        }
+
+		if errors.Is(err, sql.ErrNoRows) {
+            return errors.New("failed to retrieve inserted user ID")
+        }
+
+		return err
+	}
+	
+	return nil
 }
 
 func (r *SQLiteUserRepository) Get(ctx context.Context, id int) (*domain.User,error) {

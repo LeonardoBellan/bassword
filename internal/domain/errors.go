@@ -25,7 +25,7 @@ var (
 
 	// Service
 	ErrInvalidInput = errors.New("service: invalid input provided")
-
+	ErrUserExists = errors.New("service: user already exists")
 	ErrUserNotFound        = errors.New("service: user not found")
 	ErrInvalidSecret 	   = errors.New("service: invalid auth_hash provided")
 	ErrCredentialsNotFound = errors.New("service: credentials not found")

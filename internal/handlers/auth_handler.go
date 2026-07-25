@@ -44,9 +44,13 @@ func (h *AuthHandler) HandleRegister(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.service.Register(ctx, req.Email, []byte(req.AuthHash)); err != nil {		
+		if errors.Is(err, domain.ErrUserExists){
+			RespondWithError(w, http.StatusConflict, "User already registered")
+			return
+		}
+		
 		log.Printf("Unexpected error; %v", err)
 		RespondWithError(w, http.StatusInternalServerError, err.Error())
-		// TODO - Map internal errors
 		return
 	}
 

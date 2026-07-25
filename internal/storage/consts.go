@@ -18,13 +18,9 @@ const (
         );`
 
 	// Users
-	upsertUserQuery = `
+	insertUserQuery = `
         INSERT INTO users(email, server_hash, server_salt)
-        VALUES (?,?,?)
-        ON CONFLICT(id) DO UPDATE SET
-            email = excluded.email,
-            server_hash = excluded.server_hash,
-            server_salt = excluded.server_salt
+        VALUES (?, ?, ?)
         RETURNING id`
 
 	selectUserByIdQuery = `
