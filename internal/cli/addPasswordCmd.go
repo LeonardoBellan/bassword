@@ -27,6 +27,7 @@ var addPasswordCmd = &cobra.Command{
 	PreRunE: func(cmd *cobra.Command, args []string) error {
 		var err error
 
+		// Get flags
 		random, err = cmd.Flags().GetBool("random")
 		if err != nil {
 			return err
@@ -37,6 +38,7 @@ var addPasswordCmd = &cobra.Command{
 			return err
 		}
 
+		// Validate flag parameters
 		lengthFlagChanged := cmd.Flags().Changed("length")
 		if lengthFlagChanged && !random {
 			return fmt.Errorf("--length requires --random")

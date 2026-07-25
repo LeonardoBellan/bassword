@@ -9,9 +9,9 @@ import (
 	"path/filepath"
 
 	"github.com/LeonardoBellan/bassword/internal/api"
+	"github.com/LeonardoBellan/bassword/internal/api/handlers"
 	"github.com/LeonardoBellan/bassword/internal/crypto"
 	"github.com/LeonardoBellan/bassword/internal/domain"
-	"github.com/LeonardoBellan/bassword/internal/handlers"
 	"github.com/LeonardoBellan/bassword/internal/service"
 	"github.com/LeonardoBellan/bassword/internal/storage"
 	"github.com/joho/godotenv"
