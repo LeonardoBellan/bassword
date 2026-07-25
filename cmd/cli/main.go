@@ -1,5 +1,7 @@
 package main
 
+import "github.com/LeonardoBellan/bassword/internal/cli"
+
 func main() {
-	Execute()
+	cli.Execute()
 }

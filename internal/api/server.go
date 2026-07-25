@@ -3,8 +3,8 @@ package api
 import (
 	"context"
 
+	"github.com/LeonardoBellan/bassword/internal/api/handlers"
 	"github.com/LeonardoBellan/bassword/internal/crypto"
-	"github.com/LeonardoBellan/bassword/internal/handlers"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 )

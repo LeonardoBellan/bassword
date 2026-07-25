@@ -1,12 +1,10 @@
-package main
+package cli
 
 import (
-	"context"
 	"fmt"
 
 	"github.com/LeonardoBellan/bassword/internal/crypto"
-	"github.com/LeonardoBellan/bassword/internal/db"
-	"github.com/LeonardoBellan/bassword/internal/models"
+
 	"github.com/spf13/cobra"
 )
 
@@ -20,11 +18,11 @@ var addPasswordCmd = &cobra.Command{
 	Short: "Save or update a password for a service",
 	Long: `Save or update a password for a service.
 
-By default, the command prompts for the password interactively.
-Use --random to generate a secure random password instead, and --length to set its size.`,
+		By default, the command prompts for the password interactively.
+		Use --random to generate a secure random password instead, and --length to set its size.`,
 	Example: `  bassword add github alice
-  bassword add github alice --random
-  bassword add github alice --random --length 24`,
+  				bassword add github alice --random
+  				bassword add github alice --random --length 24`,
 	Args:  cobra.ExactArgs(2),
 	PreRunE: func(cmd *cobra.Command, args []string) error {
 		var err error
@@ -47,11 +45,9 @@ Use --random to generate a secure random password instead, and --length to set i
 			return fmt.Errorf("--length must be greater than 0")
 		}
 
-		ctx := context.Background()
-		return ensureDBOpen(ctx, dbPath)
+		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		ctx := context.Background()
 
 		// Fill new entry fields
 		var newEntry models.CredentialEntry
