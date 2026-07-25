@@ -20,7 +20,7 @@ func createExampleUser(t *testing.T) (*domain.User, error) {
 func setupTestUserRepository(ctx context.Context, t *testing.T) *SQLiteUserRepository {
 	t.Helper()
 
-	// 
+	// Inizialize repository
 	conn, _ := setupInitializedTestDB(ctx, t)
 	repository := NewSQLiteUserRepository(conn)
 

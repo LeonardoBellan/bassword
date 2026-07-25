@@ -66,8 +66,9 @@ func TestHashSecret(t *testing.T) {
 	})
 
 	t.Run("Success_Empty_Secret", func (t *testing.T){
+		t.Parallel()
+		
 		hash, salt, err := HashSecret([]byte{})
-
 		if err != nil {
 			t.Fatalf("Error during empty secret hashing: %v", err)
 		}
@@ -78,8 +79,9 @@ func TestHashSecret(t *testing.T) {
 	})
 
 	t.Run("Success_Nil_Secret", func (t *testing.T){
+		t.Parallel()
+		
 		hash, salt, err := HashSecret(nil)
-
 		if err != nil {
 			t.Fatalf("Error during nil secret hashing: %v", err)
 		}
@@ -100,6 +102,8 @@ func TestVerifyHash(t *testing.T) {
 	}
 
 	t.Run("Success_Correct_Secret", func (t *testing.T){
+		t.Parallel()
+
 		err = VerifyHash(secretCorrect, hash, salt); 
 		if err != nil {
 			t.Errorf("Error verifying hash: %v", err)
@@ -107,6 +111,8 @@ func TestVerifyHash(t *testing.T) {
 	})
 
 	t.Run("Failure_Incorrect_Secret", func (t *testing.T){
+		t.Parallel()
+		
 		err = VerifyHash(secretIncorrect, hash, salt)
 		if !errors.Is(err, domain.ErrMismatchedSecret) {
 			t.Errorf("Error comparing secrets: expected %v, got %v", domain.ErrMismatchedSecret, err)
@@ -114,8 +120,9 @@ func TestVerifyHash(t *testing.T) {
 	})
 
 	t.Run("Failure_Incorrect_Salt", func (t *testing.T){
+		t.Parallel()
+		
 		saltIncorrect := make([]byte,16)
-
 		err = VerifyHash(secretCorrect, hash, saltIncorrect)
 		if !errors.Is(err, domain.ErrMismatchedSecret) {
 			t.Errorf("Error comparing secrets: expected %v, got %v", domain.ErrMismatchedSecret, err)
