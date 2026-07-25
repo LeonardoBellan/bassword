@@ -2,8 +2,127 @@ package crypto
 
 import (
 	"bytes"
+	"errors"
 	"testing"
+
+	"github.com/LeonardoBellan/bassword/internal/domain"
+	"golang.org/x/crypto/argon2"
 )
+
+func TestHashSecret(t *testing.T) {
+	secret := []byte("secret_password")
+	t.Run("Success_Secret_Hashed", func (t *testing.T) {
+		t.Parallel()
+		
+		hash, salt, err := HashSecret(secret)
+		if err != nil {
+			t.Fatalf("Error during secret hashing: %v", err)
+		}
+
+		if len(hash) != 32 {
+			t.Errorf("Invalid Hash length: expected %v, got %v", 32, len(hash))
+		}
+		
+		if len(salt) != 16 {
+			t.Errorf("Invalid salt length: expected %v, got %v", 32, len(salt))
+		}
+	})
+
+	t.Run("Success_Hash_And_Salt_Univocity", func (t *testing.T) {
+		t.Parallel()
+		
+		hash1, salt1, err := HashSecret(secret)
+		if err != nil {
+			t.Fatalf("Error during secret hashing: %v", err)
+		}
+
+		hash2, salt2, err := HashSecret(secret)
+		if err != nil {
+			t.Fatalf("Error during secret hashing: %v", err)
+		}
+
+		if bytes.Equal(hash1, hash2) {
+			t.Errorf("Error computed hashes are equal")
+		}
+
+		if bytes.Equal(salt1, salt2) {
+			t.Error("Error generated salt is equal")
+		}
+	})
+
+	t.Run("Success_Reproducibility", func (t *testing.T) {
+		t.Parallel()
+		
+		hashComputed, salt, err := HashSecret(secret)
+		if err != nil {
+			t.Fatalf("Error during secret hashing: %v", err)
+		}
+
+		hashVerify := argon2.IDKey(secret, salt, 1, 64*1024, 4, 32)
+
+		if !bytes.Equal(hashComputed, hashVerify) {
+			t.Error("Error mismatch between hash using same salt")
+		}
+	})
+
+	t.Run("Success_Empty_Secret", func (t *testing.T){
+		hash, salt, err := HashSecret([]byte{})
+
+		if err != nil {
+			t.Fatalf("Error during empty secret hashing: %v", err)
+		}
+
+		if len(hash) != 32 || len(salt) != 16{
+			t.Errorf("Invalid hash or salt for empty secret")
+		}
+	})
+
+	t.Run("Success_Nil_Secret", func (t *testing.T){
+		hash, salt, err := HashSecret(nil)
+
+		if err != nil {
+			t.Fatalf("Error during nil secret hashing: %v", err)
+		}
+
+		if len(hash) != 32 || len(salt) != 16{
+			t.Errorf("Invalid hash or salt for nil secret")
+		}
+	})
+
+}
+
+func TestVerifyHash(t *testing.T) {
+	secretCorrect := []byte("correct_secret_password")
+	secretIncorrect := []byte("incorrect_secret_password")
+	hash, salt, err := HashSecret(secretCorrect)
+	if err != nil {
+		t.Fatalf("Error during secret hashing: %v", err)
+	}
+
+	t.Run("Success_Correct_Secret", func (t *testing.T){
+		err = VerifyHash(secretCorrect, hash, salt); 
+		if err != nil {
+			t.Errorf("Error verifying hash: %v", err)
+		}
+	})
+
+	t.Run("Failure_Incorrect_Secret", func (t *testing.T){
+		err = VerifyHash(secretIncorrect, hash, salt)
+		if !errors.Is(err, domain.ErrMismatchedSecret) {
+			t.Errorf("Error comparing secrets: expected %v, got %v", domain.ErrMismatchedSecret, err)
+		}
+	})
+
+	t.Run("Failure_Incorrect_Salt", func (t *testing.T){
+		saltIncorrect := make([]byte,16)
+
+		err = VerifyHash(secretCorrect, hash, saltIncorrect)
+		if !errors.Is(err, domain.ErrMismatchedSecret) {
+			t.Errorf("Error comparing secrets: expected %v, got %v", domain.ErrMismatchedSecret, err)
+		}
+	})
+
+}
 
 func TestEncryptDecrypt_Success(t *testing.T) {
 	plaintext := []byte("my secret")

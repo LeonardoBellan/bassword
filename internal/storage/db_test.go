@@ -47,7 +47,7 @@ func setupInitializedTestDB(ctx context.Context, t *testing.T) (*sql.DB, string)
 }
 
 func TestInitializeDB(t *testing.T) {
-	t.Run("Success_First_Initialization", func (t *testing.T){
+	t.Run("Success_First_Initialization", func (t *testing.T) {
 		ctx := context.Background()
 		conn, _ := setupTestDB(ctx,t)
 
