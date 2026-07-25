@@ -6,10 +6,41 @@ import (
 	"errors"
 	"log"
 	"net/http"
+	"regexp"
 
 	"github.com/LeonardoBellan/bassword/internal/domain"
 )
 
+// Authentication
+type authRequest struct {
+	Email   string 	`json:"email"`
+	AuthHash string `json:"auth_hash"`
+}
+
+// DTO
+func (req *authRequest) isValid() error {
+	// Validate input
+	var emailRegex = regexp.MustCompile(`^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$`)
+	if !emailRegex.MatchString(req.Email) {
+		return domain.ErrInvalidEmail
+	}
+	if len(req.AuthHash) == 0 {
+		return domain.ErrEmptyHash
+	}
+
+	return nil
+}
+
+type loginResponse struct {
+	Status string    `json:"status"`
+	Data   loginData `json:"data"`
+}
+
+type loginData struct {
+	Token string    `json:"token"`
+}
+
+// Dependencies
 type AuthService interface {
 	Register(ctx context.Context, email string, authHash []byte) error
 	Authenticate(ctx context.Context, email string, authHash []byte) (string, error)
@@ -24,12 +55,13 @@ func NewAuthHandler(s AuthService) *AuthHandler {
 }
 
 
+// Handlers
 func (h *AuthHandler) HandleRegister(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	r.Body = http.MaxBytesReader(w, r.Body, 1048576)
 
 	// Decode
-	var req AuthRequest
+	var req authRequest
 	log.Printf("Req: %v, %v", req.Email, req.AuthHash)
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -38,7 +70,7 @@ func (h *AuthHandler) HandleRegister(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Request validity
-	if err := req.IsValid(); err != nil {
+	if err := req.isValid(); err != nil {
 		RespondWithError(w, http.StatusBadRequest, err.Error())
 		return
 	}
@@ -66,14 +98,14 @@ func (h *AuthHandler) HandleLogin(w http.ResponseWriter, r *http.Request) {
 	r.Body = http.MaxBytesReader(w, r.Body, 1048576)
 
 	// Decode
-	var req AuthRequest
+	var req authRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		RespondWithError(w, http.StatusBadRequest, "Invalid JSON format")
 		return 
 	}
 
 	// Request validity
-	if err := req.IsValid(); err != nil {
+	if err := req.isValid(); err != nil {
 		if errors.Is(err, domain.ErrInvalidEmail) {
 			RespondWithError(w, http.StatusBadRequest, "Invalid email format")
 			return
@@ -104,9 +136,9 @@ func (h *AuthHandler) HandleLogin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Response
-	res := &LoginResponse{
+	res := &loginResponse{
 		Status: "success",
-		Data: LoginData{
+		Data: loginData{
 			Token: token,
 		},
 	}

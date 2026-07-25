@@ -10,6 +10,14 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
+// DTO
+type credentialsPayload struct {
+	ServiceName   string `json:"service_name"`
+    EncryptedData string `json:"encrypted_data"`
+}
+
+
+// Dependencies
 type VaultService interface {
 	Save(ctx context.Context, userID int, serviceName string, encryptedData []byte) error
 	GetForService(ctx context.Context, serviceName string, userID int) (*domain.Credentials, error)
@@ -23,11 +31,7 @@ func NewVaultHandler(s VaultService) *VaultHandler {
 	return &VaultHandler{ service:s }
 }
 
-type CredentialsPayload struct {
-	ServiceName   string `json:"service_name"`
-    EncryptedData string `json:"encrypted_data"`
-}
-
+// Handlers
 func (h *VaultHandler) HandleCreate(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	r.Body = http.MaxBytesReader(w, r.Body, 1048576)
@@ -35,7 +39,7 @@ func (h *VaultHandler) HandleCreate(w http.ResponseWriter, r *http.Request) {
 	userID := r.Context().Value("user_id").(int)
 	
 	// Decode body
-	var req CredentialsPayload
+	var req credentialsPayload
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		RespondWithError(w, http.StatusBadRequest, "Invalid JSON format")
 		return 
@@ -85,7 +89,7 @@ func (h *VaultHandler) HandleGetByService(w http.ResponseWriter, r *http.Request
 	}
 
 	// Response
-	res := CredentialsPayload {
+	res := credentialsPayload {
 		ServiceName: credentials.ServiceName,
 		EncryptedData: string(credentials.EncryptedData),
 	}

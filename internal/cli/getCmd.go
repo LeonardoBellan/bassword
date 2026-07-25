@@ -6,7 +6,6 @@ import (
 	"fmt"
 
 	"github.com/LeonardoBellan/bassword/internal/crypto"
-	"github.com/LeonardoBellan/bassword/internal/db"
 	"github.com/spf13/cobra"
 )
 
