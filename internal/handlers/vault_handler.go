@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"encoding/json"
+	"log"
 	"net/http"
 
 	"github.com/LeonardoBellan/bassword/internal/domain"
@@ -51,8 +52,9 @@ func (h *VaultHandler) HandleCreate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.service.Save(ctx, userID, req.ServiceName, []byte(req.EncryptedData)); err != nil {
-		RespondWithError(w, http.StatusInternalServerError, "Unexpected error")
 		// TODO - Map internal errors
+		log.Printf("Unexpected error; %v", err)
+		RespondWithError(w, http.StatusInternalServerError, "Unexpected error")
 		return
 	}
 
@@ -76,8 +78,9 @@ func (h *VaultHandler) HandleGetByService(w http.ResponseWriter, r *http.Request
 
 	credentials,err := h.service.GetForService(ctx, serviceName, userID);
 	if err != nil {
-		RespondWithError(w, http.StatusInternalServerError, err.Error())
 		// TODO - Map internal errors
+		log.Printf("Unexpected error; %v", err)
+		RespondWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 

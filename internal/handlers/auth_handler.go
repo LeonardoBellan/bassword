@@ -3,8 +3,11 @@ package handlers
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"log"
 	"net/http"
+
+	"github.com/LeonardoBellan/bassword/internal/domain"
 )
 
 type AuthService interface {
@@ -40,7 +43,8 @@ func (h *AuthHandler) HandleRegister(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.service.Register(ctx, req.Email, []byte(req.AuthHash)); err != nil {
+	if err := h.service.Register(ctx, req.Email, []byte(req.AuthHash)); err != nil {		
+		log.Printf("Unexpected error; %v", err)
 		RespondWithError(w, http.StatusInternalServerError, err.Error())
 		// TODO - Map internal errors
 		return
@@ -66,14 +70,32 @@ func (h *AuthHandler) HandleLogin(w http.ResponseWriter, r *http.Request) {
 
 	// Request validity
 	if err := req.IsValid(); err != nil {
+		if errors.Is(err, domain.ErrInvalidEmail) {
+			RespondWithError(w, http.StatusBadRequest, "Invalid email format")
+			return
+		}
+		if errors.Is(err, domain.ErrEmptyHash){
+			RespondWithError(w, http.StatusBadRequest, "Field 'auth_hash' is required")
+			return
+		}
+
+		log.Printf("Unexpected error: %v", err)
 		RespondWithError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
 	token,err :=  h.service.Authenticate(ctx, req.Email, []byte(req.AuthHash))
 	if err != nil {
+
+		// Authorization errors
+		if errors.Is(err, domain.ErrUserNotFound) || errors.Is(err, domain.ErrInvalidSecret) {
+			RespondWithError(w, http.StatusUnauthorized, "Authentication failed. Invalid credentials provided.")
+			return
+		}
+
+		log.Printf("Unexpected error; %v", err)
 		RespondWithError(w, http.StatusInternalServerError, "Unexpected error")
-		// TODO - Map internal errors
+
 		return
 	}
 

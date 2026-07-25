@@ -2,12 +2,14 @@ package api
 
 import (
 	"context"
+	"errors"
 	"log"
 	"net/http"
 	"strings"
 
 	"github.com/LeonardoBellan/bassword/internal/crypto"
 	"github.com/LeonardoBellan/bassword/internal/handlers"
+	"github.com/golang-jwt/jwt/v5"
 )
 
 func AuthMiddleware(tm *crypto.TokenManager) func(http.Handler) http.Handler {
@@ -20,9 +22,14 @@ func AuthMiddleware(tm *crypto.TokenManager) func(http.Handler) http.Handler {
 			reqToken := strings.TrimPrefix(authHeader, prefix)
 
 			// Validate token and add userID to context
-			userID,err := tm.ValidateToken(reqToken)
+			userID, err := tm.ValidateToken(reqToken)
 			if err != nil {
-				handlers.RespondWithError(w, http.StatusBadRequest, "Invalid token")
+				if errors.Is(err, jwt.ErrTokenExpired) {
+					handlers.RespondWithError(w, http.StatusUnauthorized, "Expired token")
+					return
+				}
+
+				handlers.RespondWithError(w, http.StatusUnauthorized, "Invalid token")
 				return
 			}	
 

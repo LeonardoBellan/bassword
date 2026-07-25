@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/LeonardoBellan/bassword/internal/crypto"
@@ -42,14 +43,21 @@ func (s *AuthService) Register(ctx context.Context, email string, authHash []byt
 	return s.repo.Save(ctx, user)
 }
 
-
+// s.Authenticates authenticates the user with the provided authHash by comparing it to the stored hash
+// Returns a jwt token
 func (s *AuthService) Authenticate(ctx context.Context, email string, authHash []byte) (string, error) {
 	// Get user info on db	
 	user, err := s.repo.GetByEmail(ctx, email)
-	if err != nil { return "",err }
+	if err != nil { 
+		if errors.Is(err, domain.ErrNotFound) {
+			return "", domain.ErrUserNotFound
+		}
+		
+		return "",err 
+	}
 
 	if err := crypto.VerifyHash(authHash, user.ServerHash, user.ServerSalt); err != nil {
-		return "",err
+		return "", domain.ErrInvalidSecret
 	}
 
 	return s.tm.GenerateToken(user.ID, 15*time.Minute)

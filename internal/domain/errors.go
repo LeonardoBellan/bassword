@@ -7,7 +7,6 @@ var (
 	ErrEmptyServiceName = errors.New("service name cannot be empty")
 	ErrEmptyEncryptedData = errors.New("encrypted data cannot be empty")
 	ErrMissingUserID = errors.New("user ID must be greater than zero")
-
 	
 	// Crypto
 	ErrMismatchedSecret = errors.New("given secret does not match")
@@ -28,6 +27,7 @@ var (
 	ErrInvalidInput = errors.New("service: invalid input provided")
 
 	ErrUserNotFound        = errors.New("service: user not found")
+	ErrInvalidSecret 	   = errors.New("service: invalid auth_hash provided")
 	ErrCredentialsNotFound = errors.New("service: credentials not found")
 
 )
