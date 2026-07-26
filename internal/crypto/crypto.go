@@ -24,22 +24,43 @@ func Wipe(slice []byte) {
     runtime.KeepAlive(slice)
 }
 
-func HashSecret(secret []byte) ([]byte, []byte, error) {
-	// Salt generation
-	salt := make([]byte, 16)
+func GenerateSalt(size int) ([]byte, error) {
+	salt := make([]byte, size)
 	if _,err := rand.Read(salt); err != nil {
+		return nil, err
+	}
+
+	return salt, nil
+}
+
+// DeriveKey derives a 64-bit key from the master password using argon2id used for key separation
+// Returns the encryptionKey and the authHash
+func DeriveKeys(secret, salt []byte) ([]byte, []byte) {
+	keyMaterial :=  argon2.IDKey(secret, salt, 1, 64*1024, 4, 64)
+
+	encryptionKey := keyMaterial[:32]
+	authHash := keyMaterial[32:]
+
+	return encryptionKey, authHash
+}
+
+// HashAuthKey receives an authHash and hashes it using argon2id
+// Returns the computed hashKey and the salt used for hashing
+func HashAuthKey(authHash []byte) ([]byte, []byte, error) {
+	salt, err := GenerateSalt(16)
+	if err != nil {
 		return nil, nil, err
 	}
 
-	// Hash generation
-	hash := argon2.IDKey(secret, salt, 1, 64*1024, 4, 32)
-
-	return hash, salt, nil
+	serverHash := argon2.IDKey(authHash, salt, 1, 64*1024, 4, 32)
+	return serverHash, salt, nil
 }
 
-func VerifyHash(secret []byte, expectedHash []byte, salt []byte) error {
+// VerifyAuthHash compares expectedHash with hashed authHash + salt
+// Returns ErrMismatchedSecret if the hash does not corrispond to expectedHash
+func VerifyAuthHash(authHash []byte, expectedHash []byte, salt []byte) error {
 	// Compute given secret
-	computedHash := argon2.IDKey(secret, salt, 1, 64*1024, 4, 32)
+	computedHash := argon2.IDKey(authHash, salt, 1, 64*1024, 4, 32)
 
 	// Compare hashes
 	if subtle.ConstantTimeCompare(computedHash, expectedHash) != 1 {
@@ -49,24 +70,16 @@ func VerifyHash(secret []byte, expectedHash []byte, salt []byte) error {
 	return nil
 }
 
-/* Derives a 32-bit key from the master password */
-func deriveKey(password []byte, salt []byte) []byte{
-	return argon2.IDKey(password, salt, 1, 64*1024, 4, 32)
-}
+// Encrypt plaintext password in AES-GCM using a derived key from the master password
+// Returns
+func Encrypt(plaintext []byte, masterKey []byte) ([]byte,error) {
 
-/* Encypts plaintext password in AES-GCM using a derived key from the master password */
-func Encrypt(plaintext []byte, masterPassword []byte, salt []byte) ([]byte,error) {
-
-	// Derive key from master password
-	key := deriveKey(masterPassword, salt)
-
-	/******* Initialize AES-GCM cipher with derived key *******/
-	block, err := aes.NewCipher(key)
+	// Initialize cipher
+	block, err := aes.NewCipher(masterKey)
 	if err != nil { return nil,err }
 
 	aesgcm, err := cipher.NewGCM(block)
 	if err != nil { return nil,err }
-	Wipe(key)	// Clean key from memory
 
 	// Generate nonce
 	nonce := make([]byte, aesgcm.NonceSize())
@@ -74,32 +87,26 @@ func Encrypt(plaintext []byte, masterPassword []byte, salt []byte) ([]byte,error
 		return nil,err
 	}
 
-	// Final package: nonce(12B) + ciphertext
+	// Final package: nonce + ciphertext
 	data := aesgcm.Seal(nonce, nonce, plaintext, nil)
 	return data, nil
 }
 
-func Decrypt(data []byte, masterPassword []byte, salt []byte) ([]byte,error){
-	// Clean passwords from memory after execution
-	defer Wipe(masterPassword)
+func Decrypt(data []byte, masterKey []byte) ([]byte, error){
 
-	// Derive key from master password
-	key := deriveKey(masterPassword, salt)
-
-	/******* Initialize AES-GCM cipher with derived key *******/
-	block, err := aes.NewCipher(key)
+	// Initialize cipher
+	block, err := aes.NewCipher(masterKey)
 	if err != nil { return nil,err }
 	aesgcm, err := cipher.NewGCM(block)
 	if err != nil { return nil,err }
 
-	Wipe(key)	// Clean key from memory
-
 	// Extract nonce from package data
 	nonceSize := aesgcm.NonceSize()
 	if len(data)<nonceSize {
-		return nil,errors.New("Ciphertext troppo corto")
+		return nil, errors.New("Invalid ciphertext: too short")
 	}
-	nonce,ciphertext := data[:nonceSize],data[nonceSize:]
+	nonce := data[:nonceSize]
+	ciphertext := data[nonceSize:]
 
 	plaintext,err := aesgcm.Open(nil,nonce,ciphertext,nil)
 	if err != nil { return nil,err }
