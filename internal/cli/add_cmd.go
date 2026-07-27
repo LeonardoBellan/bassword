@@ -51,10 +51,9 @@ var addPasswordCmd = &cobra.Command{
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 
-		// Fill new entry fields
-		var newEntry models.CredentialEntry
-		newEntry.ServiceName = args[0]
-		newEntry.Username = args[1]
+		// Get inputs
+		serviceName := args[0]
+		username := args[1]
 
 		//Get master password
 		masterPassword, err := getMasterPassword()
@@ -66,24 +65,17 @@ var addPasswordCmd = &cobra.Command{
 		if random {
 			plaintext, err = generateRandomPassword(length)
 		} else{
-			plaintext, err = getPlaintextPassword(newEntry.ServiceName)
+			plaintext, err = getPlaintextPassword(serviceName)
 		}
 		defer crypto.Wipe(plaintext) //Clean password from memory
 		if err != nil { return err }
 
-		//TODO: use client function using API endpoints
-		err = db.AddPassword(ctx,masterPassword,plaintext,&newEntry)
-		if err != nil { return err }
+		c.addPassword(masterPassword, plaintext, serviceName, username)
 
 		//Copy password in clipboard
 		return copyPasswordToClipboard(plaintext, clipboardTimeout)
 	},
-	PostRunE: func(cmd *cobra.Command, args []string) error {
-		if err := closeDB(); err != nil {
-			return err
-		}
-		return nil
-	},
+
 }
 func init() {
 	addPasswordCmd.Flags().BoolP("random", "r", false, "generate a random password instead of prompting")
