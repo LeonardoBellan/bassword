@@ -106,7 +106,7 @@ func (c *Client) Register(email string, authHash []byte) error {
 	return nil
 }
 
-func (c *Client) AddPassword(ncryptionKey, plaintext []byte, serviceName, username string) error {
+func (c *Client) AddPassword(encryptionKey, plaintext []byte, serviceName, username string) error {
 
 	return nil
 }
