@@ -16,7 +16,9 @@ func NewInitCmd(state *AppState) *cobra.Command {
 			
 			// Get input
 			email := args[0]
-			state.Client.Login(email, state.AuthHash)
+
+			err := state.Client.Register(email, state.AuthHash)
+			if err != nil { return err }
 
 			return nil
 		},
