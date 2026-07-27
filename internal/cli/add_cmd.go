@@ -8,77 +8,62 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var (
-	random bool
-	length int
-)
+func NewAddCmd(state *AppState) *cobra.Command {
 
-var addPasswordCmd = &cobra.Command{
-	Use:   "add <service> <username>",
-	Short: "Save or update a password for a service",
-	Long: `Save or update a password for a service.
+	var isRandom bool
+	var length int
 
-		By default, the command prompts for the password interactively.
-		Use --random to generate a secure random password instead, and --length to set its size.`,
-	Example: `  bassword add github alice
+	cmd := &cobra.Command{
+		Use:   "add <service> <username>",
+		Short: "Save or update a password for a service",
+		Long: `Save or update a password for a service.
+
+			By default, the command prompts for the password interactively.
+			Use --random to generate a secure random password instead, and --length to set its size.`,
+		Example: `  bassword add github alice
   				bassword add github alice --random
   				bassword add github alice --random --length 24`,
-	Args:  cobra.ExactArgs(2),
-	PreRunE: func(cmd *cobra.Command, args []string) error {
-		var err error
+		Args:  cobra.ExactArgs(2),
+		PreRunE: func(cmd *cobra.Command, args []string) error {
 
-		// Get flags
-		random, err = cmd.Flags().GetBool("random")
-		if err != nil {
-			return err
-		}
+			// Validate flag parameters
+			lengthFlagChanged := cmd.Flags().Changed("length")
+			if lengthFlagChanged && !isRandom {
+				return fmt.Errorf("--length requires --random")
+			}
+			if length <= 0 {
+				return fmt.Errorf("--length must be greater than 0")
+			}
 
-		length, err = cmd.Flags().GetInt("length")
-		if err != nil {
-			return err
-		}
+			return RequireLogin(state)
+		},
+		RunE: func(cmd *cobra.Command, args []string) error {
 
-		// Validate flag parameters
-		lengthFlagChanged := cmd.Flags().Changed("length")
-		if lengthFlagChanged && !random {
-			return fmt.Errorf("--length requires --random")
-		}
-		if length <= 0 {
-			return fmt.Errorf("--length must be greater than 0")
-		}
+			// Get inputs
+			serviceName := args[0]
+			username := args[1]
 
-		return nil
-	},
-	RunE: func(cmd *cobra.Command, args []string) error {
+			//Get service password
+			var plaintext []byte
+			var err error
+			if isRandom {
+				plaintext, err = generateRandomPassword(length)
+			} else{
+				plaintext, err = getPlaintextPassword(serviceName)
+			}
+			defer crypto.Wipe(plaintext) //Clean password from memory
+			if err != nil { return err }
 
-		// Get inputs
-		serviceName := args[0]
-		username := args[1]
+			state.Client.AddPassword(state.EncryptionKey, plaintext, serviceName, username)
 
-		//Get master password
-		masterPassword, err := getMasterPassword()
-		defer crypto.Wipe(masterPassword)
-		if err != nil { return err }
+			//Copy password in clipboard
+			return copyPasswordToClipboard(plaintext, state.ClipboardTimeout)
+		},
+	}
 
-		//Get service password
-		var plaintext []byte
-		if random {
-			plaintext, err = generateRandomPassword(length)
-		} else{
-			plaintext, err = getPlaintextPassword(serviceName)
-		}
-		defer crypto.Wipe(plaintext) //Clean password from memory
-		if err != nil { return err }
+	// Flags
+	cmd.Flags().BoolVarP(&isRandom, "random", "r", false, "generate a random password instead of prompting")
+	cmd.Flags().IntVarP(&length, "length", "l", 16, "length of the generated password (requires --random and must be greater than 0)")
 
-		c.addPassword(masterPassword, plaintext, serviceName, username)
-
-		//Copy password in clipboard
-		return copyPasswordToClipboard(plaintext, clipboardTimeout)
-	},
-
-}
-func init() {
-	addPasswordCmd.Flags().BoolP("random", "r", false, "generate a random password instead of prompting")
-	addPasswordCmd.Flags().IntP("length", "l", 16, "length of the generated password (requires --random and must be greater than 0)")
-	rootCmd.AddCommand(addPasswordCmd)
+	return cmd
 }

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"time"
 )
 
 type Client struct {
@@ -18,7 +19,9 @@ func NewClient(baseURL *url.URL, token string) *Client {
 	return &Client{
 		BaseURL: baseURL,
 		Token: token,
-		HTTPClient: &http.Client{},
+		HTTPClient: &http.Client{
+			Timeout: 10*time.Second,
+		},
 	}
 }
 
@@ -35,7 +38,7 @@ type authRequest struct {
 	AuthHash string `json:"auth_hash"`
 }
 
-func (c *Client) login(email string, authHash []byte) error {
+func (c *Client) Login(email string, authHash []byte) error {
 	
 	// Setup
 	reqBody, err := json.Marshal(authRequest{
@@ -77,7 +80,7 @@ func (c *Client) login(email string, authHash []byte) error {
 	return nil
 }
 
-func (c *Client) register(email string, authHash []byte) error {
+func (c *Client) Register(email string, authHash []byte) error {
 	// Setup
 	reqBody, err := json.Marshal(authRequest{
 		Email: email,
@@ -101,4 +104,14 @@ func (c *Client) register(email string, authHash []byte) error {
 	}
 
 	return nil
+}
+
+func (c *Client) AddPassword(ncryptionKey, plaintext []byte, serviceName, username string) error {
+
+	return nil
+}
+
+func (c *Client) GetPassword(encryptionKey []byte, serviceName string) ([]byte, error) {
+
+	return nil, nil
 }

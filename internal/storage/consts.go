@@ -44,6 +44,7 @@ const (
         SELECT *
 		FROM vault
 		WHERE id = ? AND user_id = ?;`
+
 	selectCredentialsByServiceAndUserQuery = `
         SELECT *
 		FROM vault
