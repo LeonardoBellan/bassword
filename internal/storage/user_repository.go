@@ -21,9 +21,9 @@ func (r *SQLiteUserRepository) Save(ctx context.Context, user *domain.User) erro
 	err := r.conn.QueryRowContext(ctx, insertUserQuery, user.Email, user.ServerHash, user.ServerSalt).Scan(&user.ID)
 	if err != nil {
 		var sqliteErr sqlite3.Error
-        	if errors.As(err, &sqliteErr) {
-         	   if sqliteErr.ExtendedCode == sqlite3.ErrConstraintUnique {
-         	       return domain.ErrConflict
+        if errors.As(err, &sqliteErr) {
+			if sqliteErr.ExtendedCode == sqlite3.ErrConstraintUnique {
+				return domain.ErrConflict
          	}
         }
 

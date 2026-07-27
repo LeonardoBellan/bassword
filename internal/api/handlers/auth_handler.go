@@ -62,8 +62,6 @@ func (h *AuthHandler) HandleRegister(w http.ResponseWriter, r *http.Request) {
 
 	// Decode
 	var req authRequest
-	log.Printf("Req: %v, %v", req.Email, req.AuthHash)
-
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		RespondWithError(w, http.StatusBadRequest, "Invalid JSON format")
 		return 
@@ -71,6 +69,7 @@ func (h *AuthHandler) HandleRegister(w http.ResponseWriter, r *http.Request) {
 
 	// Request validity
 	if err := req.isValid(); err != nil {
+		// TODO - Map internal errors
 		RespondWithError(w, http.StatusBadRequest, err.Error())
 		return
 	}
@@ -81,8 +80,8 @@ func (h *AuthHandler) HandleRegister(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		
-		log.Printf("Unexpected error; %v", err)
-		RespondWithError(w, http.StatusInternalServerError, err.Error())
+		log.Printf("Unexpected error: %v", err)
+		RespondWithError(w, http.StatusInternalServerError, "Unexpected error")
 		return
 	}
 
@@ -116,7 +115,7 @@ func (h *AuthHandler) HandleLogin(w http.ResponseWriter, r *http.Request) {
 		}
 
 		log.Printf("Unexpected error: %v", err)
-		RespondWithError(w, http.StatusBadRequest, err.Error())
+		RespondWithError(w, http.StatusInternalServerError, "Unexpected error")
 		return
 	}
 

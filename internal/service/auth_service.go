@@ -29,11 +29,8 @@ func NewAuthService(r UserRepository, tm *crypto.TokenManager) *AuthService {
 }
 
 func (s *AuthService) Register(ctx context.Context, email string, authHash []byte) error {
-	
-	// TODO - Check email existence
-
 	// Hash
-	serverHash, serverSalt, err := crypto.HashSecret(authHash)
+	serverHash, serverSalt, err := crypto.HashAuthKey(authHash)
 	if err != nil { return err }
 	
 	// Create user
@@ -48,8 +45,7 @@ func (s *AuthService) Register(ctx context.Context, email string, authHash []byt
 		return err
 	}
 
-
-	return s.repo.Save(ctx, user)
+	return nil
 }
 
 // s.Authenticates authenticates the user with the provided authHash by comparing it to the stored hash
@@ -65,7 +61,7 @@ func (s *AuthService) Authenticate(ctx context.Context, email string, authHash [
 		return "",err 
 	}
 
-	if err := crypto.VerifyHash(authHash, user.ServerHash, user.ServerSalt); err != nil {
+	if err := crypto.VerifyAuthHash(authHash, user.ServerHash, user.ServerSalt); err != nil {
 		return "", domain.ErrInvalidSecret
 	}
 

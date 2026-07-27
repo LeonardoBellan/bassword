@@ -99,4 +99,6 @@ func (c *Client) register(email string, authHash []byte) error {
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("Registration failed with status: %v", resp.Status)
 	}
+
+	return nil
 }
