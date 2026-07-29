@@ -13,7 +13,10 @@ import (
 func createExampleCredentials(t *testing.T) (*domain.Credentials, error) {
 	t.Helper()
 
-	return domain.NewCredentials(1, "service_example", []byte("crypted_secret"))
+	userID := "123e4567-e89b-12d3-a456-426614174000"
+	serviceName := "service_example"
+	encryptedData := []byte("encrypted_secred")
+	return domain.NewCredentials(userID, serviceName, encryptedData)
 }
 
 // SetupTestUserRepository initializes a repository
@@ -41,10 +44,6 @@ func TestVaultRepository_IntegrationFlow(t *testing.T) {
 			t.Fatalf("Error adding credentials: %v", err)
 		}
 
-		if newCredential.ID == 0 {
-			t.Errorf("Expected ID population, is zero")
-		}
-
 		if newCredential.CreatedAt.IsZero() {
 			t.Errorf("Expected CreatedAt population, is zero")
 		}
@@ -67,7 +66,7 @@ func TestVaultRepository_IntegrationFlow(t *testing.T) {
 	})
 
 	t.Run("GetByIdAndUser_Failure_ID_Not_Existing", func(t *testing.T) {
-		idInexistent := 99999
+		idInexistent := "00000000-0000-0000-0000-000000000000"
 		_, err := repo.GetByIdAndUser(ctx, idInexistent, newCredential.UserID)
 		
 		if !errors.Is(err, domain.ErrNotFound) {
@@ -76,7 +75,7 @@ func TestVaultRepository_IntegrationFlow(t *testing.T) {
 	})
 
 	t.Run("GetByIdAndUser_Failure_userID_Not_Existing", func(t *testing.T) {
-		idInexistent := 99999
+		idInexistent := "00000000-0000-0000-0000-000000000000"
 		_, err := repo.GetByIdAndUser(ctx, newCredential.ID, idInexistent)
 		
 		if !errors.Is(err, domain.ErrNotFound) {
@@ -96,7 +95,7 @@ func TestVaultRepository_IntegrationFlow(t *testing.T) {
 		}
 
 		if retrieved.ID != newCredential.ID {
-			t.Errorf("ID mismatch: expected %d, got %d", newCredential.ID, retrieved.ID)
+			t.Errorf("ID mismatch: expected %s, got %s", newCredential.ID, retrieved.ID)
 		}
 
 		if !bytes.Equal(retrieved.EncryptedData, newCredential.EncryptedData) {
@@ -115,7 +114,7 @@ func TestVaultRepository_IntegrationFlow(t *testing.T) {
 	})
 
 	t.Run("GetByUserAndService_Failure_userID_Not_Existing", func(t *testing.T) {
-		idInexistent := 99999
+		idInexistent := "00000000-0000-0000-0000-000000000000"
 		_, err := repo.GetByServiceAndUser(ctx, newCredential.ServiceName, idInexistent)
 		
 		// Verify matching data with example

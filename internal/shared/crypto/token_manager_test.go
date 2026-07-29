@@ -8,7 +8,7 @@ import (
 func TestTokenFlow(t *testing.T) {
 	secretKey := "correct-secret-jwt-key"
 	wrongKey := "incorrect-secret-jwt-key"
-	userID := 1
+	userID := "123e4567-e89b-12d3-a456-426614174000"
 
 	t.Run("Success_Valid_Token", func(t *testing.T){
 		tm, err := NewTokenManager(secretKey, 15*time.Minute)

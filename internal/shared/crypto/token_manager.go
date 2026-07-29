@@ -3,7 +3,6 @@ package crypto
 import (
 	"errors"
 	"fmt"
-	"strconv"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -33,12 +32,12 @@ func NewTokenManager(jwtKey string, expDuration time.Duration) (*TokenManager, e
 
 // GenerateToken generates a JWT using a secret key with userID custom claim and duration ttl
 // Returns the token string
-func (tm *TokenManager) GenerateToken(userID int) (string, error) {
+func (tm *TokenManager) GenerateToken(userID string) (string, error) {
 	// Prepare JWT Claims
 
 	claims := jwt.RegisteredClaims{
 		Issuer:    "bassword",
-		Subject:   strconv.Itoa(userID),
+		Subject:   userID,
 		IssuedAt:  jwt.NewNumericDate(time.Now()),
 		ExpiresAt: jwt.NewNumericDate(time.Now().Add(tm.ttl)),
 	}
@@ -51,7 +50,7 @@ func (tm *TokenManager) GenerateToken(userID int) (string, error) {
 
 // ValidateToken validates a token string of a user
 // Returns the user ID in the subject claim
-func (tm *TokenManager) ValidateToken(tokenString string) (int, error) {
+func (tm *TokenManager) ValidateToken(tokenString string) (string, error) {
 	claims := &jwt.RegisteredClaims{}
 	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (any, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
@@ -61,11 +60,11 @@ func (tm *TokenManager) ValidateToken(tokenString string) (int, error) {
 	})
 	if err != nil || !token.Valid {
 		if errors.Is(err, ErrInvalidToken) {
-			return 0, err
+			return "", err
 		}
 
-		return 0, fmt.Errorf("%w: %v", ErrInvalidToken, err) 
+		return "", fmt.Errorf("%w: %v", ErrInvalidToken, err) 
 	}
 
-	return strconv.Atoi(claims.Subject)
+	return claims.Subject, nil
 }

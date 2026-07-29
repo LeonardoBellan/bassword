@@ -10,7 +10,7 @@ import (
 
 type UserRepository interface {
 	Save(ctx context.Context, user *domain.User) error
-	Get(ctx context.Context, id int) (*domain.User, error)
+	Get(ctx context.Context, id string) (*domain.User, error)
 	GetByEmail(ctx context.Context, email string) (*domain.User, error)
 }
 
@@ -58,7 +58,7 @@ func (s *AuthService) Authenticate(ctx context.Context, email string, authHash [
 			return "", domain.ErrUserNotFound
 		}
 		
-		return "",err 
+		return "", err 
 	}
 
 	if err := crypto.VerifyAuthHash(authHash, user.ServerHash, user.ServerSalt); err != nil {

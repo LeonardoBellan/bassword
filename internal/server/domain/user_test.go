@@ -3,6 +3,8 @@ package domain
 import (
 	"bytes"
 	"testing"
+
+	"github.com/google/uuid"
 )
 
 func TestNewUser(t *testing.T) {
@@ -54,11 +56,21 @@ func TestNewUser(t *testing.T) {
 
 			// Verify success fields
 			if tt.expectedErr == nil {
+
+				// Check ID population
+				if user.ID == "" {
+					t.Error("failure generating ID, got empty string")
+				}
+
+				if _, err := uuid.Parse(user.ID); err != nil {
+                    t.Errorf("expected a valid UUID format for ID, got %s (error: %v)", user.ID, err)
+                }
+
+				// Check fields
 				if user.Email != tt.email {
 					t.Errorf("expected email %s, got %s", tt.email, user.Email)
 				}
 				
-				// Usiamo bytes.Equal per confrontare le slice di byte
 				if !bytes.Equal(user.ServerHash, tt.serverHash) {
 					t.Errorf("expected serverHash %x, got %x", tt.serverHash, user.ServerHash)
 				}

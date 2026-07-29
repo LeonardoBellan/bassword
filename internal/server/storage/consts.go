@@ -2,15 +2,16 @@ package storage
 
 const (
 	createUsersTableSQL = `CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY, 
+            id TEXT PRIMARY KEY, 
             email TEXT NOT NULL UNIQUE,
             server_hash BLOB NOT NULL,
-            server_salt BLOB NOT NULL
+            server_salt BLOB NOT NULL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         );`
 
 	createVaultTableSQL = `CREATE TABLE IF NOT EXISTS vault (
-            id INTEGER PRIMARY KEY, 
-            user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            id TEXT PRIMARY KEY, 
+            user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
             service_name TEXT NOT NULL,
             encrypted_data BLOB NOT NULL,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -19,9 +20,9 @@ const (
 
 	// Users
 	insertUserQuery = `
-        INSERT INTO users(email, server_hash, server_salt)
-        VALUES (?, ?, ?)
-        RETURNING id`
+        INSERT INTO users(id, email, server_hash, server_salt)
+        VALUES (?, ?, ?, ?)
+        RETURNING created_at`
 
 	selectUserByIdQuery = `
         SELECT id, email, server_hash, server_salt
@@ -33,12 +34,12 @@ const (
 
 	// Credentials
 	upsertCredentialsQuery = `
-        INSERT INTO vault (user_id, service_name, encrypted_data)
-        VALUES (?,?,?)
+        INSERT INTO vault (id, user_id, service_name, encrypted_data)
+        VALUES (?,?,?,?)
         ON CONFLICT(user_id, service_name) DO UPDATE SET
             encrypted_data = excluded.encrypted_data,
             created_at = CURRENT_TIMESTAMP
-        RETURNING id, created_at`
+        RETURNING created_at`
 
 	selectCredentialsByIdAndUserQuery = `
         SELECT *

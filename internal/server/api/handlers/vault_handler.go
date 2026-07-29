@@ -20,8 +20,8 @@ type credentialsPayload struct {
 
 // Dependencies
 type VaultService interface {
-	Save(ctx context.Context, userID int, serviceName string, encryptedData []byte) error
-	GetForService(ctx context.Context, serviceName string, userID int) (*domain.Credentials, error)
+	Save(ctx context.Context, userID string, serviceName string, encryptedData []byte) error
+	GetForService(ctx context.Context, serviceName string, userID string) (*domain.Credentials, error)
 }
 
 type VaultHandler struct {
@@ -37,7 +37,11 @@ func (h *VaultHandler) HandleCreate(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	r.Body = http.MaxBytesReader(w, r.Body, 1048576)
 
-	userID := r.Context().Value("user_id").(int)
+	envVal := r.Context().Value("user_id")
+	userID, ok := envVal.(string)
+	if !ok {
+		RespondWithError(w, http.StatusUnauthorized, "Unauthorized")
+	}
 	
 	// Decode body
 	var req credentialsPayload
@@ -79,8 +83,12 @@ func (h *VaultHandler) HandleCreate(w http.ResponseWriter, r *http.Request) {
 func (h *VaultHandler) HandleGetByService(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	userID := r.Context().Value("user_id").(int)
 	serviceName := chi.URLParam(r, "service")
+	envVal := r.Context().Value("user_id")
+	userID, ok := envVal.(string)
+	if !ok {
+		RespondWithError(w, http.StatusUnauthorized, "Unauthorized")
+	}
 
 	if serviceName == "" {
 		RespondWithError(w, http.StatusBadRequest, "Field 'service_name' is required")

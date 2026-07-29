@@ -13,7 +13,10 @@ import (
 func createExampleUser(t *testing.T) (*domain.User, error) {
 	t.Helper()
 
-	return domain.NewUser("username@example.com", []byte("hash_example1234"), []byte("salt_example1234"))
+	email := "user@example.com"
+	serverHash := []byte("hash_example1234")
+	serverSalt := []byte("salt_example1234")
+	return domain.NewUser(email, serverHash, serverSalt)
 }
 
 // SetupTestUserRepository initializes a repository
@@ -43,8 +46,8 @@ func TestUserRepository_IntegrationFlow(t *testing.T) {
 			t.Fatalf("Error adding user: %v", err)
 		}
 
-		if newUser.ID == 0 {
-			t.Errorf("Expected ID population, is zero")
+		if newUser.ID == "" {
+			t.Errorf("Expected ID population, is empty")
 		}
 	})
 
@@ -62,7 +65,7 @@ func TestUserRepository_IntegrationFlow(t *testing.T) {
 
 		// Verify matching data with example
 		if retrieved.ID != newUser.ID {
-			t.Errorf("ID mismatch: expected %d, got %d", newUser.ID, retrieved.ID)
+			t.Errorf("ID mismatch: expected %s, got %s", newUser.ID, retrieved.ID)
 		}
 		if retrieved.Email != newUser.Email {
 			t.Errorf("Email mismatch: expected %v, got %v", newUser.Email, retrieved.Email)
@@ -77,7 +80,7 @@ func TestUserRepository_IntegrationFlow(t *testing.T) {
 
 	t.Run("Get_Failure_ID_Not_Existing", func(t *testing.T) {
 		// Expected failure
-		idInexistent := 99999
+		idInexistent := "00000000-0000-0000-0000-000000000000"
 		_, err := repo.Get(ctx, idInexistent)
 		
 		if !errors.Is(err, domain.ErrNotFound) {
@@ -96,7 +99,7 @@ func TestUserRepository_IntegrationFlow(t *testing.T) {
 
 		// Verify matching data with example
 		if retrieved.ID != newUser.ID {
-			t.Errorf("ID mismatch: expected %d, got %d", newUser.ID, retrieved.ID)
+			t.Errorf("ID mismatch: expected %s, got %s", newUser.ID, retrieved.ID)
 		}
 		if retrieved.Email != newUser.Email {
 			t.Errorf("Email mismatch: expected %v, got %v", newUser.Email, retrieved.Email)
