@@ -12,7 +12,7 @@ import (
 	"golang.org/x/crypto/argon2"
 )
 
-/* Zeroes a slice to remove it from memory */
+// Wipe zeroes the elements of the provided slice
 func Wipe(slice []byte) {
     if slice == nil {
         return
@@ -23,6 +23,8 @@ func Wipe(slice []byte) {
     runtime.KeepAlive(slice)
 }
 
+// GenerateSalt generates a random cryptographically secure salt of the provided size
+// Returns the generated salt
 func GenerateSalt(size int) ([]byte, error) {
 	salt := make([]byte, size)
 	if _,err := rand.Read(salt); err != nil {
@@ -69,8 +71,8 @@ func VerifyAuthHash(authHash []byte, expectedHash []byte, salt []byte) error {
 	return nil
 }
 
-// Encrypt plaintext password in AES-GCM using a derived key from the master password
-// Returns
+// Encrypt a plaintext in AES-GCM using a derived key from the master password
+// Returns the encrypted ciphertext
 func Encrypt(plaintext []byte, masterKey []byte) ([]byte,error) {
 
 	// Initialize cipher
@@ -91,6 +93,8 @@ func Encrypt(plaintext []byte, masterKey []byte) ([]byte,error) {
 	return data, nil
 }
 
+// Decrypt a ciphertext using an AES-GCM using a derived key from the master password
+// Returns the decrypted plaintext
 func Decrypt(data []byte, masterKey []byte) ([]byte, error){
 
 	// Initialize cipher

@@ -3,7 +3,6 @@ package api
 import (
 	"context"
 	"errors"
-	"log"
 	"net/http"
 	"strings"
 
@@ -12,6 +11,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
+// AuthMiddleware verifies the provided token and saves in the context the user ID
 func AuthMiddleware(tm *crypto.TokenManager) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler{
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -33,7 +33,6 @@ func AuthMiddleware(tm *crypto.TokenManager) func(http.Handler) http.Handler {
 				return
 			}	
 
-			log.Printf("User ID: %v", userID)
 			ctx := context.WithValue(r.Context(), "user_id", userID)
 
 			next.ServeHTTP(w, r.WithContext(ctx))

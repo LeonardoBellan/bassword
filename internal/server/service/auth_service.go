@@ -27,6 +27,7 @@ func NewAuthService(r UserRepository, tm *crypto.TokenManager) *AuthService {
 
 }
 
+// s.Register saves a new user by hashing the provided authHash
 func (s *AuthService) Register(ctx context.Context, email string, authHash []byte) error {
 	// Hash
 	serverHash, serverSalt, err := crypto.HashAuthKey(authHash)
@@ -47,7 +48,7 @@ func (s *AuthService) Register(ctx context.Context, email string, authHash []byt
 	return nil
 }
 
-// s.Authenticates authenticates the user with the provided authHash by comparing it to the stored hash
+// s.Authenticate authenticates the user with the provided authHash by comparing it to the stored hash
 // Returns a jwt token
 func (s *AuthService) Authenticate(ctx context.Context, email string, authHash []byte) (string, error) {
 	// Get user info on db	

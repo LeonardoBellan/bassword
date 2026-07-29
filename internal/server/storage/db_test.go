@@ -36,6 +36,8 @@ func setupTestDB(ctx context.Context,t *testing.T) (*sql.DB, string) {
 	return conn, dbPath
 }
 
+// setupdInitializedTestDB initializes and connects to a temporary db
+// Returns the connection and path
 func setupInitializedTestDB(ctx context.Context, t *testing.T) (*sql.DB, string) {
 	t.Helper()
 	

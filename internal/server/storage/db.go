@@ -9,6 +9,8 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
+// OpenDB creates a connection to the sqlite3 db in the provided path
+// Returns the db connection
 func OpenDB(ctx context.Context, dbPath string) (*sql.DB, error) {
 	// Open db connection
 	conn, err := sql.Open("sqlite3", dbPath)

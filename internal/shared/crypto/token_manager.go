@@ -32,6 +32,7 @@ func NewTokenManager(jwtKey string, expDuration time.Duration) (*TokenManager, e
 }
 
 // GenerateToken generates a JWT using a secret key with userID custom claim and duration ttl
+// Returns the token string
 func (tm *TokenManager) GenerateToken(userID int) (string, error) {
 	// Prepare JWT Claims
 
@@ -48,6 +49,8 @@ func (tm *TokenManager) GenerateToken(userID int) (string, error) {
 	return token.SignedString(tm.jwtKey)
 }
 
+// ValidateToken validates a token string of a user
+// Returns the user ID in the subject claim
 func (tm *TokenManager) ValidateToken(tokenString string) (int, error) {
 	claims := &jwt.RegisteredClaims{}
 	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (any, error) {
