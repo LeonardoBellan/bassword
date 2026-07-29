@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"log"
 	"net/http"
 
@@ -89,8 +90,14 @@ func (h *VaultHandler) HandleGetByService(w http.ResponseWriter, r *http.Request
 	credentials,err := h.service.GetForService(ctx, serviceName, userID);
 	if err != nil {
 		// TODO - Map internal errors
-		log.Printf("Unexpected error; %v", err)
-		RespondWithError(w, http.StatusInternalServerError, err.Error())
+
+		if errors.Is(err, domain.ErrCredentialsNotFound) {
+			RespondWithError(w, http.StatusNotFound, "Credentials not found")
+			return
+		}
+
+		log.Printf("Unexpected error: %v", err)
+		RespondWithError(w, http.StatusInternalServerError, "Unexpected error")
 		return
 	}
 

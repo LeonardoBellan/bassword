@@ -7,7 +7,7 @@ import (
 func RequireMasterPassword(state *AppState) error {
 
 	// Prompt master password
-	masterPassword, err := securePrompt("Insert master password:")
+	masterPassword, err := securePrompt("Insert master password: ")
 	if err != nil {
 		return err
 	}

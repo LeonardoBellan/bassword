@@ -15,7 +15,7 @@ func securePrompt(prompt string) ([]byte, error) {
 }
 
 // getPlaintextPassword prompts for a service's password.
-// Returns the password as []byte; the caller MUST defer crypto.Wipe() on it.
+// Returns the password as []byte; the caller MUST call crypto.Wipe() on it.
 func getPlaintextPassword(serviceName string) ([]byte, error) {
 	return securePrompt(fmt.Sprintf("Insert password for %s: ", serviceName))
 }
