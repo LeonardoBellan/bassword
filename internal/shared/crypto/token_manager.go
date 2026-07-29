@@ -12,21 +12,25 @@ import (
 // Creates and validates JWT
 type TokenManager struct {
 	jwtKey []byte
+	ttl time.Duration
 }
 
-func NewTokenManager(jwtKey string) *TokenManager {
-	return &TokenManager{ jwtKey: []byte(jwtKey) }
+func NewTokenManager(jwtKey string, expDuration time.Duration) *TokenManager {
+	return &TokenManager{ 
+		jwtKey: []byte(jwtKey),
+		ttl: expDuration,
+	}
 }
 
 // GenerateToken generates a JWT using a secret key with userID custom claim and duration ttl
-func (tm *TokenManager) GenerateToken(userID int, ttl time.Duration) (string, error) {
+func (tm *TokenManager) GenerateToken(userID int) (string, error) {
 	// Prepare JWT Claims
 
 	claims := jwt.RegisteredClaims{
 		Issuer:    "bassword",
 		Subject:   strconv.Itoa(userID),
 		IssuedAt:  jwt.NewNumericDate(time.Now()),
-		ExpiresAt: jwt.NewNumericDate(time.Now().Add(ttl)),
+		ExpiresAt: jwt.NewNumericDate(time.Now().Add(tm.ttl)),
 	}
 
 	// Create token

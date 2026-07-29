@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"errors"
-	"time"
 
 	"github.com/LeonardoBellan/bassword/internal/server/domain"
 	"github.com/LeonardoBellan/bassword/internal/shared/crypto"
@@ -65,5 +64,5 @@ func (s *AuthService) Authenticate(ctx context.Context, email string, authHash [
 		return "", domain.ErrInvalidSecret
 	}
 
-	return s.tm.GenerateToken(user.ID, 15*time.Minute)
+	return s.tm.GenerateToken(user.ID)
 }

@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/LeonardoBellan/bassword/internal/server/api"
 	"github.com/LeonardoBellan/bassword/internal/server/api/handlers"
@@ -29,7 +30,7 @@ func main() {
 
 	// Token manager setup
 	jwtKey := os.Getenv("JWT_KEY")
-	tm := crypto.NewTokenManager(jwtKey)
+	tm := crypto.NewTokenManager(jwtKey, 15*time.Minute)
 
 	// determine db path
 	homeDir, err := os.UserHomeDir()

@@ -11,9 +11,9 @@ func TestTokenFlow(t *testing.T) {
 	userID := 1
 
 	t.Run("Success_Valid_Token", func(t *testing.T){
-		tm := NewTokenManager(secretKey)
+		tm := NewTokenManager(secretKey, 15*time.Minute)
 		
-		tokenString, err := tm.GenerateToken(userID, 15*time.Minute)
+		tokenString, err := tm.GenerateToken(userID)
 		if err != nil {
 			t.Fatalf("Error generating jwt: %v", err)
 		}
@@ -36,9 +36,9 @@ func TestTokenFlow(t *testing.T) {
 		{
 			name: "Failure_Tampered_Token",
 			setupToken: func() (string, *TokenManager) {
-				tm := NewTokenManager(secretKey)
+				tm := NewTokenManager(secretKey, 15*time.Minute)
 
-				tokenStr, _ := tm.GenerateToken(userID, 15*time.Minute) 
+				tokenStr, _ := tm.GenerateToken(userID) 
 				tamperedStr := tokenStr[:len(tokenStr)-1] + "X"
 				return tamperedStr, tm
 			},
@@ -46,9 +46,9 @@ func TestTokenFlow(t *testing.T) {
 		},{
 			name: "Failure_Expired_Token",
 			setupToken: func() (string, *TokenManager) {
-				tm := NewTokenManager(secretKey)
+				tm := NewTokenManager(secretKey, -1*time.Minute)
 
-				tokenStr, _ := tm.GenerateToken(userID, -1*time.Minute)
+				tokenStr, _ := tm.GenerateToken(userID)
 				return tokenStr, tm
 			},
 			expectedErr: true,
@@ -56,11 +56,11 @@ func TestTokenFlow(t *testing.T) {
 			name: "Failure_Wrong_signing_Key",
 			setupToken: func() (string, *TokenManager) {
 				// Token manager A generates jwt
-				tmA := NewTokenManager(secretKey)
-				tokenStr, _ := tmA.GenerateToken(userID, 15*time.Minute)
+				tmA := NewTokenManager(secretKey, 15*time.Minute)
+				tokenStr, _ := tmA.GenerateToken(userID)
 			
 				// Token manager B is used to validate with wrong key
-				tmB := NewTokenManager(wrongKey)
+				tmB := NewTokenManager(wrongKey, 15*time.Minute)
 				return tokenStr, tmB
 			},
 			expectedErr: true,
