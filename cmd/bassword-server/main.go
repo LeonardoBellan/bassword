@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"log"
 	"net/http"
@@ -19,6 +20,60 @@ import (
 	"github.com/joho/godotenv"
 )
 
+func getDBPath() string {
+	configPath := os.Getenv("DB_PATH")
+
+	// Default
+	if configPath == "" {
+		configPath = ".local.db"
+	}
+
+	// If absolute path
+	if filepath.IsAbs(configPath) {
+		return configPath
+	}
+
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		homeDir = "."
+	}
+	
+	return filepath.Join(homeDir, configPath)
+}
+
+func setupDB(ctx context.Context, path string) (*sql.DB, error){
+	conn,err := storage.OpenDB(ctx, path)
+	if err != nil { log.Fatalf("failed to open database: %v", err) }
+
+	if err := storage.InitializeDB(ctx, conn); err != nil {
+		if !errors.Is(err, domain.ErrDBAlreadyInitialized) {
+			conn.Close()
+			log.Fatalf("failed to initialize db: %v", err)
+		}
+		
+		log.Print("Db already initialized")
+	}
+
+	return conn, nil
+}
+
+func getJWTExpiration() time.Duration {
+	envValue := os.Getenv("JWT_EXPIRATION_TIME")
+
+	// Default
+	if envValue == "" {
+		return 15*time.Minute
+	}
+
+	duration, err := time.ParseDuration(envValue)
+	if err != nil {
+		log.Printf("Error parsing JWT_EXPIRATION_TIME (%s), using default value: %v", envValue, err)
+		return 15*time.Minute
+	}
+
+	return duration
+}
+
 func main() {
 
 	// Environment Setup
@@ -30,30 +85,20 @@ func main() {
 
 	// Token manager setup
 	jwtKey := os.Getenv("JWT_KEY")
-	tm := crypto.NewTokenManager(jwtKey, 15*time.Minute)
+	exp := getJWTExpiration()
 
-	// determine db path
-	homeDir, err := os.UserHomeDir()
+	tm, err := crypto.NewTokenManager(jwtKey, exp)
 	if err != nil {
-		homeDir = "."
+		log.Fatalf("Error creating token manager: %v", err)
 	}
-	configPath := os.Getenv("DB_PATH")
-	dbPath := filepath.Join(homeDir, configPath)
-
-	// db connection
-	conn,err := storage.OpenDB(ctx, dbPath)
-	if err != nil { log.Fatalf("failed to open database: %v", err) }
-	defer conn.Close()
-
-	if err := storage.InitializeDB(ctx, conn); err != nil {
-		if !errors.Is(err, domain.ErrDBAlreadyInitialized) {
-			log.Fatalf("failed to initialize db: %v", err)
-		}
-		
-		log.Print("Db already initialized")
+	
+	// DB and repository setup
+	dbPath := getDBPath()
+	conn, err := setupDB(ctx, dbPath)
+	if err != nil {
+		log.Fatalf("Database setup failed: %v", err)
 	}
 
-	// repository setup
 	userRepo := storage.NewSQLiteUserRepository(conn)
 	vaultRepo := storage.NewSQLiteVaultRepository(conn)
 

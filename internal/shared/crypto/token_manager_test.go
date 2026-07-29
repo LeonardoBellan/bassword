@@ -11,7 +11,10 @@ func TestTokenFlow(t *testing.T) {
 	userID := 1
 
 	t.Run("Success_Valid_Token", func(t *testing.T){
-		tm := NewTokenManager(secretKey, 15*time.Minute)
+		tm, err := NewTokenManager(secretKey, 15*time.Minute)
+		if err != nil {
+			t.Fatalf("Error in token manager setup: %v", err)
+		}
 		
 		tokenString, err := tm.GenerateToken(userID)
 		if err != nil {
@@ -34,33 +37,58 @@ func TestTokenFlow(t *testing.T) {
 		expectedErr	bool
 	}{
 		{
-			name: "Failure_Tampered_Token",
+			name: "Failure_Token_Tampered",
 			setupToken: func() (string, *TokenManager) {
-				tm := NewTokenManager(secretKey, 15*time.Minute)
+				tm, err := NewTokenManager(secretKey, 15*time.Minute)
+				if err != nil {
+					t.Fatalf("Error in token manager setup: %v", err)
+				}
 
-				tokenStr, _ := tm.GenerateToken(userID) 
+				tokenStr, err := tm.GenerateToken(userID)
+				if err != nil {
+					t.Fatalf("Failed to generate token: %v", err)
+				}
+
 				tamperedStr := tokenStr[:len(tokenStr)-1] + "X"
 				return tamperedStr, tm
 			},
 			expectedErr: true,
 		},{
-			name: "Failure_Expired_Token",
+			name: "Failure_Token_Expired",
 			setupToken: func() (string, *TokenManager) {
-				tm := NewTokenManager(secretKey, -1*time.Minute)
+				tm, err := NewTokenManager(secretKey, 1*time.Millisecond)
+				if err != nil {
+					t.Fatalf("Error in token manager setup: %v", err)
+				}
 
-				tokenStr, _ := tm.GenerateToken(userID)
+				tokenStr, err := tm.GenerateToken(userID)
+				if err != nil {
+					t.Fatalf("Failed to generate token: %v", err)
+				}
+
+				time.Sleep(10 * time.Millisecond)
+
 				return tokenStr, tm
 			},
 			expectedErr: true,
 		},{
-			name: "Failure_Wrong_signing_Key",
+			name: "Failure_Wrong_Signing_Key",
 			setupToken: func() (string, *TokenManager) {
 				// Token manager A generates jwt
-				tmA := NewTokenManager(secretKey, 15*time.Minute)
-				tokenStr, _ := tmA.GenerateToken(userID)
+				tmA, err := NewTokenManager(secretKey, 15*time.Minute)
+				if err != nil {
+					t.Fatalf("Error in token manager setup: %v", err)
+				}
+				tokenStr, err := tmA.GenerateToken(userID)
+				if err != nil {
+					t.Fatalf("Failed to generate token: %v", err)
+				}
 			
 				// Token manager B is used to validate with wrong key
-				tmB := NewTokenManager(wrongKey, 15*time.Minute)
+				tmB, err := NewTokenManager(wrongKey, 15*time.Minute)
+				if err != nil {
+					t.Fatalf("Error in token manager setup: %v", err)
+				}
 				return tokenStr, tmB
 			},
 			expectedErr: true,

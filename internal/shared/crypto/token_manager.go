@@ -15,11 +15,20 @@ type TokenManager struct {
 	ttl time.Duration
 }
 
-func NewTokenManager(jwtKey string, expDuration time.Duration) *TokenManager {
+func NewTokenManager(jwtKey string, expDuration time.Duration) (*TokenManager, error) {
+
+	if jwtKey == "" {
+		return nil, fmt.Errorf("Empty jwt key")
+	}
+
+	if expDuration <= 0 {
+		return nil, fmt.Errorf("expDuration must be greater than 0")
+	}
+
 	return &TokenManager{ 
 		jwtKey: []byte(jwtKey),
 		ttl: expDuration,
-	}
+	}, nil
 }
 
 // GenerateToken generates a JWT using a secret key with userID custom claim and duration ttl
