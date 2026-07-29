@@ -4,17 +4,13 @@ import "errors"
 
 var (
 	// Domain
+	ErrInvalidEmail     = errors.New("invalid email format")
+	ErrEmptyHash        = errors.New("authorization hash cannot be empty")
+	ErrEmptySalt        = errors.New("user salt cannot be empty")
+
 	ErrEmptyServiceName = errors.New("service name cannot be empty")
 	ErrEmptyEncryptedData = errors.New("encrypted data cannot be empty")
 	ErrMissingUserID = errors.New("user ID must be greater than zero")
-	
-	// Crypto
-	ErrMismatchedSecret = errors.New("given secret does not match")
-	ErrInvalidToken = errors.New("invalid token format")
-	
-	ErrInvalidEmail = errors.New("invalid email format")
-	ErrEmptyHash = errors.New("authorization hash cannot be empty")
-	ErrEmptySalt = errors.New("user salt cannot be empty")
 	
 	// Storage
 	ErrDBNotInitialized     = errors.New("storage: database is not initialized")

@@ -5,7 +5,6 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/LeonardoBellan/bassword/internal/server/domain"
 	"golang.org/x/crypto/argon2"
 )
 
@@ -208,8 +207,8 @@ func TestVerifyAuthHash(t *testing.T) {
 		t.Parallel()
 		
 		err = VerifyAuthHash(secretIncorrect, hash, salt)
-		if !errors.Is(err, domain.ErrMismatchedSecret) {
-			t.Errorf("Error comparing secrets: expected %v, got %v", domain.ErrMismatchedSecret, err)
+		if !errors.Is(err, ErrMismatchedSecret) {
+			t.Errorf("Error comparing secrets: expected %v, got %v", ErrMismatchedSecret, err)
 		}
 	})
 
@@ -218,8 +217,8 @@ func TestVerifyAuthHash(t *testing.T) {
 		
 		saltIncorrect := make([]byte,16)
 		err = VerifyAuthHash(secretCorrect, hash, saltIncorrect)
-		if !errors.Is(err, domain.ErrMismatchedSecret) {
-			t.Errorf("Error comparing secrets: expected %v, got %v", domain.ErrMismatchedSecret, err)
+		if !errors.Is(err, ErrMismatchedSecret) {
+			t.Errorf("Error comparing secrets: expected %v, got %v", ErrMismatchedSecret, err)
 		}
 	})
 

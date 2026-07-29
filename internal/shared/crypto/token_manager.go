@@ -6,7 +6,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/LeonardoBellan/bassword/internal/server/domain"
 	"github.com/golang-jwt/jwt/v5"
 )
 
@@ -40,16 +39,16 @@ func (tm *TokenManager) ValidateToken(tokenString string) (int, error) {
 	claims := &jwt.RegisteredClaims{}
 	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (any, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("%w: unsupported signing method (%v)", domain.ErrInvalidToken, token.Header["alg"])
+			return nil, fmt.Errorf("%w: unsupported signing method (%v)", ErrInvalidToken, token.Header["alg"])
 		}
 		return tm.jwtKey, nil			
 	})
 	if err != nil || !token.Valid {
-		if errors.Is(err, domain.ErrInvalidToken) {
+		if errors.Is(err, ErrInvalidToken) {
 			return 0, err
 		}
 
-		return 0, fmt.Errorf("%w: %v", domain.ErrInvalidToken, err) 
+		return 0, fmt.Errorf("%w: %v", ErrInvalidToken, err) 
 	}
 
 	return strconv.Atoi(claims.Subject)

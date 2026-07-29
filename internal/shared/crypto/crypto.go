@@ -9,7 +9,6 @@ import (
 	"io"
 	"runtime"
 
-	"github.com/LeonardoBellan/bassword/internal/server/domain"
 	"golang.org/x/crypto/argon2"
 )
 
@@ -64,7 +63,7 @@ func VerifyAuthHash(authHash []byte, expectedHash []byte, salt []byte) error {
 
 	// Compare hashes
 	if subtle.ConstantTimeCompare(computedHash, expectedHash) != 1 {
-		return domain.ErrMismatchedSecret
+		return ErrMismatchedSecret
 	}
 
 	return nil
