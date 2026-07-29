@@ -5,7 +5,7 @@ import (
 	"database/sql"
 	"errors"
 
-	"github.com/LeonardoBellan/bassword/internal/domain"
+	"github.com/LeonardoBellan/bassword/internal/server/domain"
 	"github.com/mattn/go-sqlite3"
 )
 

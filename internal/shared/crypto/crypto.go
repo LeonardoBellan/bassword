@@ -9,7 +9,7 @@ import (
 	"io"
 	"runtime"
 
-	"github.com/LeonardoBellan/bassword/internal/domain"
+	"github.com/LeonardoBellan/bassword/internal/server/domain"
 	"golang.org/x/crypto/argon2"
 )
 

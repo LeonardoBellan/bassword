@@ -1,7 +1,7 @@
 package cli
 
 import (
-	"github.com/LeonardoBellan/bassword/internal/crypto"
+	"github.com/LeonardoBellan/bassword/internal/shared/crypto"
 )
 
 func RequireMasterPassword(state *AppState) error {

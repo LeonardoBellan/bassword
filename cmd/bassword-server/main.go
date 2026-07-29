@@ -8,12 +8,13 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/LeonardoBellan/bassword/internal/api"
-	"github.com/LeonardoBellan/bassword/internal/api/handlers"
-	"github.com/LeonardoBellan/bassword/internal/crypto"
-	"github.com/LeonardoBellan/bassword/internal/domain"
-	"github.com/LeonardoBellan/bassword/internal/service"
-	"github.com/LeonardoBellan/bassword/internal/storage"
+	"github.com/LeonardoBellan/bassword/internal/server/api"
+	"github.com/LeonardoBellan/bassword/internal/server/api/handlers"
+	"github.com/LeonardoBellan/bassword/internal/server/domain"
+	"github.com/LeonardoBellan/bassword/internal/server/service"
+	"github.com/LeonardoBellan/bassword/internal/server/storage"
+	"github.com/LeonardoBellan/bassword/internal/shared/crypto"
+
 	"github.com/joho/godotenv"
 )
 

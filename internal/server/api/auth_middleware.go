@@ -7,8 +7,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/LeonardoBellan/bassword/internal/api/handlers"
-	"github.com/LeonardoBellan/bassword/internal/crypto"
+	"github.com/LeonardoBellan/bassword/internal/server/api/handlers"
+	"github.com/LeonardoBellan/bassword/internal/shared/crypto"
 	"github.com/golang-jwt/jwt/v5"
 )
 

@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/LeonardoBellan/bassword/internal/domain"
+	"github.com/LeonardoBellan/bassword/internal/server/domain"
 	"github.com/golang-jwt/jwt/v5"
 )
 

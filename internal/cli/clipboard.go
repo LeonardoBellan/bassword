@@ -6,7 +6,7 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/LeonardoBellan/bassword/internal/crypto"
+	"github.com/LeonardoBellan/bassword/internal/shared/crypto"
 	"golang.design/x/clipboard"
 )
 

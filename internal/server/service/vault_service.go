@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	"github.com/LeonardoBellan/bassword/internal/domain"
+	"github.com/LeonardoBellan/bassword/internal/server/domain"
 )
 
 type VaultRepository interface {

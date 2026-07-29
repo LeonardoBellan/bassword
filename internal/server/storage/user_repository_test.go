@@ -6,7 +6,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/LeonardoBellan/bassword/internal/domain"
+	"github.com/LeonardoBellan/bassword/internal/server/domain"
 )
 
 // createExampleUser mock user

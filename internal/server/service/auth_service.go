@@ -5,8 +5,8 @@ import (
 	"errors"
 	"time"
 
-	"github.com/LeonardoBellan/bassword/internal/crypto"
-	"github.com/LeonardoBellan/bassword/internal/domain"
+	"github.com/LeonardoBellan/bassword/internal/server/domain"
+	"github.com/LeonardoBellan/bassword/internal/shared/crypto"
 )
 
 type UserRepository interface {
