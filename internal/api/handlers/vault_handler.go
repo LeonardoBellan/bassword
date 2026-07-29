@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"log"
 	"net/http"
@@ -15,7 +16,6 @@ type credentialsPayload struct {
 	ServiceName   string `json:"service_name"`
     EncryptedData string `json:"encrypted_data"`
 }
-
 
 // Dependencies
 type VaultService interface {
@@ -45,17 +45,23 @@ func (h *VaultHandler) HandleCreate(w http.ResponseWriter, r *http.Request) {
 		return 
 	}
 
+	ciphertext, err := base64.URLEncoding.DecodeString(req.EncryptedData)
+	if err != nil {
+    	RespondWithError(w, http.StatusBadRequest, "Invalid Base64 encoding in encrypted_data")
+    	return
+	}
+
 	// Validazione input
 	if req.ServiceName == "" {
 		RespondWithError(w, http.StatusBadRequest, "Field 'service_name' is required")
 		return
 	}
-	if len(req.EncryptedData) == 0 {
+	if len(ciphertext) == 0 {
 		RespondWithError(w, http.StatusBadRequest, "Field 'encrypted_data' is required")
 		return
 	}
 
-	if err := h.service.Save(ctx, userID, req.ServiceName, []byte(req.EncryptedData)); err != nil {
+	if err := h.service.Save(ctx, userID, req.ServiceName, ciphertext); err != nil {
 		// TODO - Map internal errors
 		log.Printf("Unexpected error; %v", err)
 		RespondWithError(w, http.StatusInternalServerError, "Unexpected error")

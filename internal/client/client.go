@@ -2,11 +2,14 @@ package client
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
 	"time"
+
+	"github.com/LeonardoBellan/bassword/internal/crypto"
 )
 
 type Client struct {
@@ -37,6 +40,17 @@ type authRequest struct {
 	Email   string 	`json:"email"`
 	AuthHash string `json:"auth_hash"`
 }
+
+type credentialsRequest struct {
+	ServiceName   string `json:"service_name"`
+    EncryptedData string `json:"encrypted_data"`
+}
+
+type secretData struct {
+	Username	string	`json:"user"`
+	Password	[]byte	`json:"pwd"`
+}
+
 
 func (c *Client) Login(email string, authHash []byte) error {
 	
@@ -75,7 +89,6 @@ func (c *Client) Login(email string, authHash []byte) error {
 	}
 
 	c.Token = result.Data.Token
-	fmt.Printf("Obtained JWT: %v", c.Token)
 
 	return nil
 }
@@ -88,9 +101,9 @@ func (c *Client) Register(email string, authHash []byte) error {
 	})
 	if err != nil { return err }
 
-	endpoint := c.BaseURL.ResolveReference(&url.URL{Path: "/api/v1/register"})
-
+	
 	// Request
+	endpoint := c.BaseURL.ResolveReference(&url.URL{Path: "/api/v1/register"})
 	req, err := http.NewRequest("POST", endpoint.String(), bytes.NewBuffer(reqBody))
 	if err != nil { return err }
 	
@@ -99,7 +112,7 @@ func (c *Client) Register(email string, authHash []byte) error {
 	defer resp.Body.Close()
 
 	// Response
-	if resp.StatusCode != http.StatusOK {
+	if resp.StatusCode != http.StatusCreated {
 		return fmt.Errorf("Registration failed with status: %v", resp.Status)
 	}
 
@@ -107,11 +120,35 @@ func (c *Client) Register(email string, authHash []byte) error {
 }
 
 func (c *Client) AddPassword(encryptionKey, plaintext []byte, serviceName, username string) error {
+	// Setup
+	dataJSON, err := json.Marshal( secretData{
+		Username: username,
+		Password: plaintext,
+	})
+	if err != nil { return err }
+	defer crypto.Wipe(dataJSON)
+
+	ciphertext, err := crypto.Encrypt(dataJSON, encryptionKey)
+	if err != nil { return err }
+
+	reqBody, err := json.Marshal(credentialsRequest{
+		ServiceName: serviceName,
+		EncryptedData: base64.URLEncoding.EncodeToString(ciphertext),
+	})
+
+	// Request
+	endpoint := c.BaseURL.ResolveReference(&url.URL{Path: "/api/v1/credentials/"})
+	req, err := http.NewRequest("POST", endpoint.String(), bytes.NewBuffer(reqBody))
+	if err != nil { return err }
+	
+	resp, err := c.doRequest(req)
+	if err != nil { return err }
+	defer resp.Body.Close()
 
 	return nil
 }
 
-func (c *Client) GetPassword(encryptionKey []byte, serviceName string) ([]byte, error) {
+func (c *Client) GetPassword(encryptionKey []byte, serviceName string) (string, []byte, error) {
 
-	return nil, nil
+	return "", nil, nil
 }
