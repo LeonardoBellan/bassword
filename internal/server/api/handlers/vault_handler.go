@@ -97,7 +97,7 @@ func (h *VaultHandler) HandleGetByService(w http.ResponseWriter, r *http.Request
 	// Response
 	res := credentialsPayload {
 		ServiceName: credentials.ServiceName,
-		EncryptedData: string(credentials.EncryptedData),
+		EncryptedData: base64.URLEncoding.EncodeToString(credentials.EncryptedData),
 	}
 	RespondWithJSON(w, http.StatusOK, res)
 }

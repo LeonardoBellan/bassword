@@ -3,7 +3,8 @@ package cli
 import (
 	"fmt"
 
-	"github.com/LeonardoBellan/bassword/internal/crypto"
+	"github.com/LeonardoBellan/bassword/internal/client"
+	"github.com/LeonardoBellan/bassword/internal/shared/crypto"
 
 	"github.com/spf13/cobra"
 )
@@ -43,7 +44,7 @@ func NewAddCmd(state *AppState) *cobra.Command {
 			serviceName := args[0]
 			username := args[1]
 
-			//Get service password
+			//Get service password from user
 			var plaintext []byte
 			var err error
 			if isRandom {
@@ -54,7 +55,9 @@ func NewAddCmd(state *AppState) *cobra.Command {
 			defer crypto.Wipe(plaintext) //Clean password from memory
 			if err != nil { return err }
 
-			state.Client.AddPassword(state.EncryptionKey, plaintext, serviceName, username)
+			credentials, err := client.NewCredentials(username, plaintext)
+			if err != nil { return err }
+			state.Client.AddPassword(state.EncryptionKey, serviceName, credentials)
 
 			//Copy password in clipboard
 			return copyPasswordToClipboard(plaintext, state.ClipboardTimeout)

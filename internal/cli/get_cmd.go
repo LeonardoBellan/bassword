@@ -1,7 +1,8 @@
 package cli
 
 import (
-	"github.com/LeonardoBellan/bassword/internal/crypto"
+	"fmt"
+
 	"github.com/spf13/cobra"
 )
 
@@ -20,12 +21,13 @@ func NewGetCmd(state *AppState) *cobra.Command {
 			//Get inputs
 			serviceName := args[0]
 
-			_, plaintext, err := state.Client.GetPassword(state.EncryptionKey, serviceName)
-			defer crypto.Wipe(plaintext) //Clean password from memory
+			credentials, err := state.Client.GetPassword(state.EncryptionKey, serviceName)
+			//defer crypto.Wipe(credentials.Password) //Clean password from memory
 			if err != nil { return err }
 
-			//Copy password in clipboard
-			return copyPasswordToClipboard(plaintext, state.ClipboardTimeout)
+			// Pass credentials to user
+			fmt.Println("Username:", credentials.Username)
+			return copyPasswordToClipboard(credentials.Password, state.ClipboardTimeout)
 		},
 	}
 

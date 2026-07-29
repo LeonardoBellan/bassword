@@ -9,7 +9,7 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/LeonardoBellan/bassword/internal/crypto"
+	"github.com/LeonardoBellan/bassword/internal/shared/crypto"
 )
 
 type Client struct {
@@ -40,17 +40,6 @@ type authRequest struct {
 	Email   string 	`json:"email"`
 	AuthHash string `json:"auth_hash"`
 }
-
-type credentialsRequest struct {
-	ServiceName   string `json:"service_name"`
-    EncryptedData string `json:"encrypted_data"`
-}
-
-type secretData struct {
-	Username	string	`json:"user"`
-	Password	[]byte	`json:"pwd"`
-}
-
 
 func (c *Client) Login(email string, authHash []byte) error {
 	
@@ -100,7 +89,6 @@ func (c *Client) Register(email string, authHash []byte) error {
 		AuthHash: string(authHash),
 	})
 	if err != nil { return err }
-
 	
 	// Request
 	endpoint := c.BaseURL.ResolveReference(&url.URL{Path: "/api/v1/register"})
@@ -119,36 +107,84 @@ func (c *Client) Register(email string, authHash []byte) error {
 	return nil
 }
 
-func (c *Client) AddPassword(encryptionKey, plaintext []byte, serviceName, username string) error {
-	// Setup
-	dataJSON, err := json.Marshal( secretData{
-		Username: username,
-		Password: plaintext,
-	})
+func (c *Client) AddPassword(encryptionKey []byte, serviceName string, cred *Credentials) error {
+
+	fmt.Println(serviceName)
+	fmt.Println("cred:", cred)
+
+	// Parse JSON
+	dataJSON, err := json.Marshal(cred)
 	if err != nil { return err }
 	defer crypto.Wipe(dataJSON)
 
+	// Encrypt
 	ciphertext, err := crypto.Encrypt(dataJSON, encryptionKey)
 	if err != nil { return err }
 
-	reqBody, err := json.Marshal(credentialsRequest{
+	fmt.Println(ciphertext)
+
+	// Encode Base64URL
+	reqBody, err := json.Marshal(credentialsPayload{
 		ServiceName: serviceName,
 		EncryptedData: base64.URLEncoding.EncodeToString(ciphertext),
 	})
+
+	fmt.Println(reqBody)
 
 	// Request
 	endpoint := c.BaseURL.ResolveReference(&url.URL{Path: "/api/v1/credentials/"})
 	req, err := http.NewRequest("POST", endpoint.String(), bytes.NewBuffer(reqBody))
 	if err != nil { return err }
-	
+
 	resp, err := c.doRequest(req)
 	if err != nil { return err }
 	defer resp.Body.Close()
 
+	// Response
+	if resp.StatusCode != http.StatusCreated {
+		return fmt.Errorf("Add password failed with status: %v", resp.Status)
+	}
+
 	return nil
 }
 
-func (c *Client) GetPassword(encryptionKey []byte, serviceName string) (string, []byte, error) {
+func (c *Client) GetPassword(encryptionKey []byte, serviceName string) (*Credentials, error) {
 
-	return "", nil, nil
+	// Request
+	safeServiceName := url.PathEscape(serviceName)
+	path := fmt.Sprintf("/api/v1/credentials/%s", safeServiceName)
+	endpoint := c.BaseURL.ResolveReference(&url.URL{Path: path})
+	req, err := http.NewRequest("GET", endpoint.String(), nil)
+	if err != nil { return nil, err }
+	
+	resp, err := c.doRequest(req)
+	if err != nil { return nil, err }
+	defer resp.Body.Close()
+	
+	// Response
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("Get password failed with status: %v", resp.Status)
+	}
+
+	var result credentialsPayload
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return nil, fmt.Errorf("Error decoding response: %v", err)
+	}
+	
+	// Decode base64URL
+	ciphertext, err := base64.URLEncoding.DecodeString(result.EncryptedData)
+	if err != nil { return nil, err }
+
+	// Decrypt ciphertext
+	dataJSON, err := crypto.Decrypt(ciphertext, encryptionKey)
+	if err != nil { return nil, err}
+	defer crypto.Wipe(dataJSON)
+
+	// Parse credentials
+	var credentials Credentials
+	if err := json.Unmarshal(dataJSON, &credentials); err != nil { 
+		return nil, err 
+	}
+
+	return &credentials, nil
 }
