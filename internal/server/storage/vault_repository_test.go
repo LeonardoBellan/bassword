@@ -1,4 +1,4 @@
-package storage
+package storage_test
 
 import (
 	"bytes"
@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/LeonardoBellan/bassword/internal/server/domain"
+	"github.com/LeonardoBellan/bassword/internal/server/storage"
 )
 
 // createExampleCredentials mock credentials
@@ -19,12 +20,12 @@ func createExampleCredentials(t *testing.T) (*domain.Credentials, error) {
 	return domain.NewCredentials(userID, serviceName, encryptedData)
 }
 
-// SetupTestUserRepository initializes a repository
-func setupTestVaultRepository(ctx context.Context, t *testing.T) *SQLiteVaultRepository {
+// SetupTestVaultRepository initializes a repository
+func setupTestVaultRepository(ctx context.Context, t *testing.T) *storage.SQLiteVaultRepository {
 	t.Helper()
 
 	conn,_ := setupInitializedTestDB(ctx,t)
-	repository := NewSQLiteVaultRepository(conn)
+	repository := storage.NewSQLiteVaultRepository(conn)
 
 	return repository
 }
@@ -70,7 +71,7 @@ func TestVaultRepository_IntegrationFlow(t *testing.T) {
 		_, err := repo.GetByIdAndUser(ctx, idInexistent, newCredential.UserID)
 		
 		if !errors.Is(err, domain.ErrNotFound) {
-			t.Errorf("Expected %v, got %v",domain.ErrNotFound,err)
+			t.Errorf("Expected error '%v', got '%v'",domain.ErrNotFound,err)
 		}
 	})
 
@@ -79,7 +80,7 @@ func TestVaultRepository_IntegrationFlow(t *testing.T) {
 		_, err := repo.GetByIdAndUser(ctx, newCredential.ID, idInexistent)
 		
 		if !errors.Is(err, domain.ErrNotFound) {
-			t.Errorf("Expected %v, got %v",domain.ErrNotFound,err)
+			t.Errorf("Expected error '%v', got '%v'",domain.ErrNotFound,err)
 		}
 	})
 
@@ -109,7 +110,7 @@ func TestVaultRepository_IntegrationFlow(t *testing.T) {
 		
 		// Verify matching data with example
 		if !errors.Is(err, domain.ErrNotFound) {
-			t.Errorf("Expected %v, got %v",domain.ErrNotFound,err)
+			t.Errorf("Expected error '%v', got '%v'", domain.ErrNotFound, err)
 		}
 	})
 
@@ -119,7 +120,7 @@ func TestVaultRepository_IntegrationFlow(t *testing.T) {
 		
 		// Verify matching data with example
 		if !errors.Is(err, domain.ErrNotFound) {
-			t.Errorf("Expected %v, got %v",domain.ErrNotFound,err)
+			t.Errorf("Expected error '%v', got '%v'", domain.ErrNotFound,err)
 		}
 	})
 }

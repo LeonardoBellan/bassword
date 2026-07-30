@@ -1,4 +1,4 @@
-package storage
+package storage_test
 
 import (
 	"context"
@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/LeonardoBellan/bassword/internal/server/domain"
+	"github.com/LeonardoBellan/bassword/internal/server/storage"
 )
 
 // setupdTestDB creates and connects to a temporary uninitialized db
@@ -18,7 +19,7 @@ func setupTestDB(ctx context.Context,t *testing.T) (*sql.DB, string) {
 	// temporary db file
 	dbPath := filepath.Join(t.TempDir(), "test.db")
 	
-	conn, err := OpenDB(ctx, dbPath)
+	conn, err := storage.OpenDB(ctx, dbPath)
 	if err != nil {
 		t.Fatalf("Error opening db in %s: %v", dbPath, err)
 	}
@@ -42,7 +43,7 @@ func setupInitializedTestDB(ctx context.Context, t *testing.T) (*sql.DB, string)
 	t.Helper()
 	
 	conn, path := setupTestDB(ctx,t)
-	if err := InitializeDB(ctx,conn); err != nil {
+	if err := storage.InitializeDB(ctx,conn); err != nil {
 		t.Fatalf("InitializeDB failed: %v", err)
 	}
 	return conn, path
@@ -53,7 +54,7 @@ func TestInitializeDB(t *testing.T) {
 		ctx := context.Background()
 		conn, _ := setupTestDB(ctx,t)
 
-		if err := InitializeDB(ctx,conn); err != nil {
+		if err := storage.InitializeDB(ctx,conn); err != nil {
 			t.Fatalf("InitializeDB failed: %v", err)
 		}
 
@@ -73,8 +74,8 @@ func TestInitializeDB(t *testing.T) {
 		ctx := context.Background()
 		conn, _ := setupInitializedTestDB(ctx,t)
 
-		if err := InitializeDB(ctx,conn); !errors.Is(err,domain.ErrDBAlreadyInitialized) {
-			t.Errorf("Expected %v, got: %v", domain.ErrDBAlreadyInitialized,err)
+		if err := storage.InitializeDB(ctx,conn); !errors.Is(err,domain.ErrDBAlreadyInitialized) {
+			t.Errorf("Expected error '%v', got '%v'", domain.ErrDBAlreadyInitialized,err)
 		}
 	})
 
@@ -86,12 +87,12 @@ func TestInitializeDB(t *testing.T) {
 		conn, _ := setupTestDB(context.Background(), t) 
 
 		// Initialization with cancelled context
-		err := InitializeDB(ctx, conn)
+		err := storage.InitializeDB(ctx, conn)
 
     	if err == nil {
         	t.Error("Expected InitializeDB to fail with a cancelled context, got nil")
     	} else if !errors.Is(err, context.Canceled) {
-       		t.Errorf("Expected context.Canceled error, got: %v", err)
+       		t.Errorf("Expected error '%v', got '%v'", context.Canceled, err)
    		}
 	})
 }
@@ -101,7 +102,7 @@ func TestOpenDB(t *testing.T) {
 		ctx := context.Background()
 		_, path := setupInitializedTestDB(ctx,t)
 
-		conn, err := OpenDB(ctx,path)
+		conn, err := storage.OpenDB(ctx,path)
 		if err != nil { t.Fatalf("Could not open initialized db, got: %v", err) }
 		t.Cleanup(func() { conn.Close() })
 
@@ -119,13 +120,13 @@ func TestOpenDB(t *testing.T) {
 		_, path := setupInitializedTestDB(context.Background(), t) 
 
 		// Initialization with cancelled context
-		conn, err := OpenDB(ctx,path)
+		conn, err := storage.OpenDB(ctx,path)
 
 		if conn != nil { t.Cleanup(func() { conn.Close() }) }
 		if err == nil {
         	t.Error("Expected OpenDB to fail with a cancelled context, got nil")
     	} else if !errors.Is(err, context.Canceled) {
-       		t.Errorf("Expected context.Canceled error, got: %v", err)
+       		t.Errorf("Expected error '%v', got '%v'", context.Canceled, err)
    		}
 	})
 }

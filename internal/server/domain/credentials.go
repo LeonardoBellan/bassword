@@ -16,9 +16,12 @@ type Credentials struct {
 
 func NewCredentials(userID string, serviceName string, encryptedData []byte) (*Credentials,error) {
 	if userID == "" {
-		return nil, ErrMissingUserID
+		return nil, ErrInvalidUserID
 	}
 	
+	if err := uuid.Validate(userID); err != nil {
+		return nil, ErrInvalidUserID
+	}
 	if serviceName == "" {
 		return nil, ErrEmptyServiceName
 	}

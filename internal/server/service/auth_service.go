@@ -62,6 +62,7 @@ func (s *AuthService) Authenticate(ctx context.Context, email string, authHash [
 	}
 
 	if err := crypto.VerifyAuthHash(authHash, user.ServerHash, user.ServerSalt); err != nil {
+		
 		return "", domain.ErrInvalidSecret
 	}
 

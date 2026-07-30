@@ -10,7 +10,7 @@ var (
 
 	ErrEmptyServiceName = errors.New("service name cannot be empty")
 	ErrEmptyEncryptedData = errors.New("encrypted data cannot be empty")
-	ErrMissingUserID = errors.New("user ID must be greater than zero")
+	ErrInvalidUserID = errors.New("user ID is not in a valid format")
 	
 	// Storage
 	ErrDBNotInitialized     = errors.New("storage: database is not initialized")

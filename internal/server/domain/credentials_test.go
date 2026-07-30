@@ -40,7 +40,7 @@ func TestNewCredentials(t *testing.T) {
 			userID:        "",
 			serviceName:   "example-service",
 			encryptedData: []byte("encrypted-bytes"),
-			expectedErr:   ErrMissingUserID,
+			expectedErr:   ErrInvalidUserID,
 		},
 	}
 

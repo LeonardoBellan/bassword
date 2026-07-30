@@ -1,4 +1,4 @@
-package storage
+package storage_test
 
 import (
 	"bytes"
@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/LeonardoBellan/bassword/internal/server/domain"
+	"github.com/LeonardoBellan/bassword/internal/server/storage"
 )
 
 // createExampleUser mock user
@@ -20,12 +21,12 @@ func createExampleUser(t *testing.T) (*domain.User, error) {
 }
 
 // SetupTestUserRepository initializes a repository
-func setupTestUserRepository(ctx context.Context, t *testing.T) *SQLiteUserRepository {
+func setupTestUserRepository(ctx context.Context, t *testing.T) *storage.SQLiteUserRepository {
 	t.Helper()
 
 	// Inizialize repository
 	conn, _ := setupInitializedTestDB(ctx, t)
-	repository := NewSQLiteUserRepository(conn)
+	repository := storage.NewSQLiteUserRepository(conn)
 
 	return repository
 }
@@ -84,7 +85,7 @@ func TestUserRepository_IntegrationFlow(t *testing.T) {
 		_, err := repo.Get(ctx, idInexistent)
 		
 		if !errors.Is(err, domain.ErrNotFound) {
-			t.Errorf("Expected %v, got %v",domain.ErrNotFound,err)
+			t.Errorf("Expected error '%v', got '%v'",domain.ErrNotFound,err)
 		}
 	})
 
@@ -118,7 +119,7 @@ func TestUserRepository_IntegrationFlow(t *testing.T) {
 		_, err := repo.GetByEmail(ctx, emailInexistent)
 		
 		if !errors.Is(err, domain.ErrNotFound) {
-			t.Errorf("Expected %v, got %v",domain.ErrNotFound,err)
+			t.Errorf("Expected error '%v', got '%v'",domain.ErrNotFound,err)
 		}
 	})
 }
