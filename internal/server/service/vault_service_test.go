@@ -1,22 +1,24 @@
 package service_test
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"testing"
 
 	"github.com/LeonardoBellan/bassword/internal/server/domain"
 	"github.com/LeonardoBellan/bassword/internal/server/service"
+	"github.com/google/uuid"
 )
 
 type FakeVaultRepository struct {
-	vault         map[string]*domain.Credentials
+	vault         map[uuid.UUID]*domain.Credentials
 	SimulateError bool 
 }
 
 func NewFakeVaultRepository(simulateError bool) *FakeVaultRepository {
 	return &FakeVaultRepository{
-		vault: make(map[string]*domain.Credentials),
+		vault: make(map[uuid.UUID]*domain.Credentials),
 		SimulateError: simulateError,
 	}
 }
@@ -32,7 +34,7 @@ func (f *FakeVaultRepository) Save(ctx context.Context, cred *domain.Credentials
 	return nil
 }
 
-func (f *FakeVaultRepository) GetByIdAndUser(ctx context.Context, id string, userID string) (*domain.Credentials, error) {
+func (f *FakeVaultRepository) GetByIdAndUser(ctx context.Context, id uuid.UUID, userID uuid.UUID) (*domain.Credentials, error) {
 	if f.SimulateError {
 		return nil, errSimulatedIO
 	}
@@ -47,7 +49,7 @@ func (f *FakeVaultRepository) GetByIdAndUser(ctx context.Context, id string, use
 	return cred, nil
 }
 
-func (f *FakeVaultRepository) GetByServiceAndUser(ctx context.Context, serviceName string, userID string) (*domain.Credentials, error) {
+func (f *FakeVaultRepository) GetByServiceAndUser(ctx context.Context, serviceName string, userID uuid.UUID) (*domain.Credentials, error) {
 	if f.SimulateError {
 		return nil, errSimulatedIO
 	}
@@ -62,13 +64,13 @@ func (f *FakeVaultRepository) GetByServiceAndUser(ctx context.Context, serviceNa
 }
 
 func TestVaultService_Save (t *testing.T) {
-	userID := "123e4567-e89b-12d3-a456-426614174000"
+	userID := uuid.New()
 	serviceName := "service_example"
 	encryptedData := []byte("encrypted_secret")
 
 	tests := []struct {
 		name              string
-		userID            string
+		userID            uuid.UUID
 		serviceName       string
 		encryptedData     []byte
 		simulateRepoError bool
@@ -83,7 +85,7 @@ func TestVaultService_Save (t *testing.T) {
 			expectedError: nil,
 		},{
 			name: "Failure_Domain_Error_Propagation",
-			userID: "00000000-0000-0000-0000-0000000",
+			userID: uuid.Nil,
 			serviceName: serviceName,
 			encryptedData: encryptedData,
 			simulateRepoError: false,
@@ -113,14 +115,14 @@ func TestVaultService_Save (t *testing.T) {
 	} 
 }
 
-func TestVaultService_Get(t *testing.T) {
-	userID := "123e4567-e89b-12d3-a456-426614174000"
+func TestVaultService_GetForService(t *testing.T) {
+	userID := uuid.New()
 	serviceName := "service_example"
 	encryptedData := []byte("encrypted_secret")
 
 	tests := []struct {
 		name				string
-		userID				string
+		userID				uuid.UUID
 		serviceName			string
 		setupRepo			func(repo *FakeVaultRepository)
 		simulateRepoError 	bool
@@ -171,11 +173,20 @@ func TestVaultService_Get(t *testing.T) {
 			}
 
 			// Verify state
-			if tt.expectedError == nil && creds == nil {
-				t.Error("Expected credentials object, got nil")
-			}
-			if tt.expectedError != nil && creds != nil {
-				t.Error("Expected nil credentials after error")
+			if tt.expectedError == nil {
+				if creds == nil {
+					t.Error("Expected credentials object, got nil")
+				} else {
+					if creds.UserID != tt.userID {
+						t.Errorf("Expected UserID %s, got %s", tt.userID, creds.UserID)
+					}
+					if creds.ServiceName != tt.serviceName{
+						t.Errorf("Expected service %s, got %s", tt.serviceName, creds.UserID)
+					}
+					if !bytes.Equal(creds.EncryptedData, encryptedData){
+						t.Errorf("Encrypted data mismatch")
+					}
+				}
 			}
 		})
 	}

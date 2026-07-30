@@ -57,16 +57,11 @@ func TestNewUser(t *testing.T) {
 			// Verify success fields
 			if tt.expectedErr == nil {
 
-				// Check ID population
-				if user.ID == "" {
-					t.Error("failure generating ID, got empty string")
+				// Check fields
+				if user.ID == uuid.Nil {
+					t.Errorf("Expected id population, got uuid.Nil")
 				}
 
-				if _, err := uuid.Parse(user.ID); err != nil {
-                    t.Errorf("expected a valid UUID format for ID, got %s (error: %v)", user.ID, err)
-                }
-
-				// Check fields
 				if user.Email != tt.email {
 					t.Errorf("expected email %s, got %s", tt.email, user.Email)
 				}

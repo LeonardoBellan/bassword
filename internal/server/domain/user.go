@@ -7,7 +7,7 @@ import (
 )
 
 type User struct {
-	ID         string `json:"id"`
+	ID         uuid.UUID `json:"id"`
 	Email      string `json:"email"`
 	ServerHash []byte `json:"server_hash"`
 	ServerSalt []byte `json:"server_salt"`
@@ -25,7 +25,7 @@ func NewUser(email string, serverHash, serverSalt []byte) (*User, error) {
 		return nil, ErrEmptySalt
 	}
 
-	id := uuid.NewString()
+	id := uuid.New()
 
 	return &User{
 		ID:			id,

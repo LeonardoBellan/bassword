@@ -8,6 +8,7 @@ import (
 
 	"github.com/LeonardoBellan/bassword/internal/server/domain"
 	"github.com/LeonardoBellan/bassword/internal/server/storage"
+	"github.com/google/uuid"
 )
 
 // createExampleUser mock user
@@ -31,7 +32,7 @@ func setupTestUserRepository(ctx context.Context, t *testing.T) *storage.SQLiteU
 	return repository
 }
 
-func TestUserRepository_IntegrationFlow(t *testing.T) {
+func TestUserRepository_Save(t *testing.T) {
 	ctx := context.Background()
 
 	// Setup
@@ -47,79 +48,127 @@ func TestUserRepository_IntegrationFlow(t *testing.T) {
 			t.Fatalf("Error adding user: %v", err)
 		}
 
-		if newUser.ID == "" {
-			t.Errorf("Expected ID population, is empty")
+		if newUser.CreatedAt.IsZero()  {
+			t.Errorf("Expected CreatedAt population, is empty")
 		}
 	})
 
-	/**** Get ****/
-	t.Run("Get_Success", func(t *testing.T) {
-		// Get user by ID
-		retrieved, err := repo.Get(ctx, newUser.ID)
-		
-		if err != nil {
-			t.Fatalf("Error getting user: %v", err)
-		}
-		if retrieved == nil {
-			t.Fatalf("User Not Found")
-		}
+}
 
-		// Verify matching data with example
-		if retrieved.ID != newUser.ID {
-			t.Errorf("ID mismatch: expected %s, got %s", newUser.ID, retrieved.ID)
-		}
-		if retrieved.Email != newUser.Email {
-			t.Errorf("Email mismatch: expected %v, got %v", newUser.Email, retrieved.Email)
-		}
-		if !bytes.Equal(retrieved.ServerHash, newUser.ServerHash) {
-			t.Errorf("Corrupted encrypted data or not correct. Expected %v, got %v", newUser.ServerHash, retrieved.ServerHash)
-		}
-		if !bytes.Equal(retrieved.ServerSalt, newUser.ServerSalt) {
-			t.Errorf("Corrupted encrypted data or not correct. Expected %v, got %v", newUser.ServerSalt, retrieved.ServerSalt)
-		}
-	})
+func TestGet(t *testing.T) {
+	ctx := context.Background()
 
-	t.Run("Get_Failure_ID_Not_Existing", func(t *testing.T) {
-		// Expected failure
-		idInexistent := "00000000-0000-0000-0000-000000000000"
-		_, err := repo.Get(ctx, idInexistent)
-		
-		if !errors.Is(err, domain.ErrNotFound) {
-			t.Errorf("Expected error '%v', got '%v'",domain.ErrNotFound,err)
-		}
-	})
+	// Setup
+	repo := setupTestUserRepository(ctx, t)
+	newUser, err := createExampleUser(t)
+	if err != nil { t.Fatalf("Error creating example user: %v", err) }
 
-	/**** Get by email ****/
-	t.Run("GetByEmail_Success", func(t *testing.T) {
-		// Get user by email
-		retrieved, err := repo.GetByEmail(ctx, newUser.Email)
-		
-		if err != nil {
-			t.Fatalf("Error getting user: %v", err)
-		}
+	if err := repo.Save(ctx, newUser); err != nil {
+		t.Fatalf("Error saving credentials: %v", err)
+	}
 
-		// Verify matching data with example
-		if retrieved.ID != newUser.ID {
-			t.Errorf("ID mismatch: expected %s, got %s", newUser.ID, retrieved.ID)
-		}
-		if retrieved.Email != newUser.Email {
-			t.Errorf("Email mismatch: expected %v, got %v", newUser.Email, retrieved.Email)
-		}
-		if !bytes.Equal(retrieved.ServerHash, newUser.ServerHash) {
-			t.Errorf("Corrupted encrypted data or not correct. Expected %v, got %v", newUser.ServerHash, retrieved.ServerHash)
-		}
-		if !bytes.Equal(retrieved.ServerSalt, newUser.ServerSalt) {
-			t.Errorf("Corrupted encrypted data or not correct. Expected %v, got %v", newUser.ServerSalt, retrieved.ServerSalt)
-		}
-	})
+	tests := []struct {
+		name			string
+		id				uuid.UUID
+		expectedError	error
+	}{
+		{
+			name: "Success_GetById",
+			id: newUser.ID,
+			expectedError: nil,
+		},{
+			name: "Failure_ID_Inexistent",
+			id: uuid.New(),
+			expectedError: domain.ErrNotFound,
+		},
+	}
 
-	t.Run("GetByEmail_Failure_Email_Not_Existing", func(t *testing.T) {
-		// Expected failure
-		emailInexistent := "wrongusername@example.com"
-		_, err := repo.GetByEmail(ctx, emailInexistent)
-		
-		if !errors.Is(err, domain.ErrNotFound) {
-			t.Errorf("Expected error '%v', got '%v'",domain.ErrNotFound,err)
-		}
-	})
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			retrieved, err := repo.Get(ctx, tt.id)
+
+			if !errors.Is(err, tt.expectedError){
+				t.Fatalf("Expected error '%v', got '%v'", tt.expectedError, err)
+			}
+
+			if tt.expectedError == nil {
+				if retrieved == nil {
+					t.Fatalf("Error getting user: %v", err)
+				}
+
+				if retrieved.ID != newUser.ID {
+					t.Errorf("ID mismatch: expected %s, got %s", newUser.ID, retrieved.ID)
+				}
+				if retrieved.Email != newUser.Email {
+					t.Errorf("Email mismatch: expected %v, got %v", newUser.Email, retrieved.Email)
+				}
+				if !bytes.Equal(retrieved.ServerHash, newUser.ServerHash) {
+					t.Errorf("ServerHash mismatch")
+				}
+				if !bytes.Equal(retrieved.ServerSalt, newUser.ServerSalt) {
+					t.Errorf("ServerSalt mismatch")
+				}
+			}
+		})
+	}
+}
+
+func TestGetByEmail(t *testing.T) {
+	ctx := context.Background()
+
+	// Setup
+	repo := setupTestUserRepository(ctx, t)
+	newUser, err := createExampleUser(t)
+	if err != nil { t.Fatalf("Error creating example user: %v", err) }
+
+	if err := repo.Save(ctx, newUser); err != nil {
+		t.Fatalf("Error saving credentials: %v", err)
+	}
+
+	tests := []struct {
+		name			string
+		email			string
+		expectedError	error
+	}{
+		{
+			name: "Success_GetByEmail",
+			email: newUser.Email,
+			expectedError: nil,
+		},{
+			name: "Failure_Email_Inexistent",
+			email: "wrong@example.com",
+			expectedError: domain.ErrNotFound,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			retrieved, err := repo.GetByEmail(ctx, tt.email)
+
+			if !errors.Is(err, tt.expectedError){
+				t.Fatalf("Expected error '%v', got '%v'", tt.expectedError,err)
+			}
+
+			// Validate fields
+			if tt.expectedError == nil {
+				if retrieved == nil {
+					t.Fatalf("Error getting user: %v", err)
+				}
+
+				if retrieved.ID != newUser.ID {
+					t.Errorf("ID mismatch: expected %s, got %s", newUser.ID, retrieved.ID)
+				}
+				if retrieved.Email != newUser.Email {
+					t.Errorf("Email mismatch: expected %v, got %v", newUser.Email, retrieved.Email)
+				}
+				if !bytes.Equal(retrieved.ServerHash, newUser.ServerHash) {
+					t.Errorf("ServerHash mismatch")
+				}
+				if !bytes.Equal(retrieved.ServerSalt, newUser.ServerSalt) {
+					t.Errorf("ServerSalt mismatch")
+				}
+			}
+			
+		})
+	}
 }

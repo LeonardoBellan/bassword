@@ -5,6 +5,7 @@ import (
 	"database/sql"
 
 	"github.com/LeonardoBellan/bassword/internal/server/domain"
+	"github.com/google/uuid"
 )
 
 type SQLiteVaultRepository struct {
@@ -24,7 +25,7 @@ func (r *SQLiteVaultRepository) Save(ctx context.Context, credentials *domain.Cr
 
 
 // Returns the credential entry corresponding to the ID
-func (r *SQLiteVaultRepository) GetByIdAndUser(ctx context.Context, id string, userID string) (*domain.Credentials, error) {
+func (r *SQLiteVaultRepository) GetByIdAndUser(ctx context.Context, id uuid.UUID, userID uuid.UUID) (*domain.Credentials, error) {
 	// Get entry of a service
 	var credentials domain.Credentials
 	if err := r.conn.QueryRowContext(ctx, selectCredentialsByIdAndUserQuery, id, userID).Scan(
@@ -44,10 +45,10 @@ func (r *SQLiteVaultRepository) GetByIdAndUser(ctx context.Context, id string, u
 }
 
 // Returns the credential entry of the service of a user
-func (r *SQLiteVaultRepository) GetByServiceAndUser(ctx context.Context, serviceName string, userID string) (*domain.Credentials, error) {
+func (r *SQLiteVaultRepository) GetByServiceAndUser(ctx context.Context, serviceName string, userID uuid.UUID) (*domain.Credentials, error) {
 	// Get entry of a service
 	var credentials domain.Credentials
-	if err := r.conn.QueryRowContext(ctx, selectCredentialsByServiceAndUserQuery, serviceName, userID).Scan(
+	if err := r.conn.QueryRowContext(ctx, selectCredentialsByServiceAndUserQuery, serviceName, userID.String()).Scan(
 		&credentials.ID,
 		&credentials.UserID,
 		&credentials.ServiceName,

@@ -4,13 +4,15 @@ import (
 	"context"
 	"errors"
 
+	"github.com/google/uuid"
+
 	"github.com/LeonardoBellan/bassword/internal/server/domain"
 	"github.com/LeonardoBellan/bassword/internal/shared/crypto"
 )
 
 type UserRepository interface {
 	Save(ctx context.Context, user *domain.User) error
-	Get(ctx context.Context, id string) (*domain.User, error)
+	Get(ctx context.Context, id uuid.UUID) (*domain.User, error)
 	GetByEmail(ctx context.Context, email string) (*domain.User, error)
 }
 

@@ -8,13 +8,14 @@ import (
 
 	"github.com/LeonardoBellan/bassword/internal/server/domain"
 	"github.com/LeonardoBellan/bassword/internal/server/storage"
+	"github.com/google/uuid"
 )
 
 // createExampleCredentials mock credentials
 func createExampleCredentials(t *testing.T) (*domain.Credentials, error) {
 	t.Helper()
 
-	userID := "123e4567-e89b-12d3-a456-426614174000"
+	userID := uuid.New()
 	serviceName := "service_example"
 	encryptedData := []byte("encrypted_secred")
 	return domain.NewCredentials(userID, serviceName, encryptedData)
@@ -30,7 +31,26 @@ func setupTestVaultRepository(ctx context.Context, t *testing.T) *storage.SQLite
 	return repository
 }
 
-func TestVaultRepository_IntegrationFlow(t *testing.T) {
+func TestSave(t *testing.T) {
+	ctx := context.Background()
+	repo := setupTestVaultRepository(ctx, t)
+
+	t.Run("Success_Save", func(t *testing.T) {
+		newCredentials, err := createExampleCredentials(t)
+		if err != nil { t.Fatalf("Error creating example credentials: %v", err) }
+
+		err = repo.Save(ctx, newCredentials)
+		if err != nil {
+			t.Fatalf("Error adding credentials: %v", err)
+		}
+
+		if newCredentials.CreatedAt.IsZero() {
+			t.Errorf("Expected CreatedAt population, is zero")
+		}
+	})
+}
+
+func TestGetByIdAndUser(t *testing.T) {
 	ctx := context.Background()
 
 	// Setup
@@ -38,89 +58,128 @@ func TestVaultRepository_IntegrationFlow(t *testing.T) {
 	newCredential, err := createExampleCredentials(t)
 	if err != nil { t.Fatalf("Error creating example credentials: %v", err) }
 
-	t.Run("Save_Success", func(t *testing.T) {
-		err := repo.Save(ctx, newCredential)
-		
-		if err != nil {
-			t.Fatalf("Error adding credentials: %v", err)
-		}
+	if err := repo.Save(ctx, newCredential); err != nil {
+		t.Fatalf("Error saving credentials: %v", err)
+	}
 
-		if newCredential.CreatedAt.IsZero() {
-			t.Errorf("Expected CreatedAt population, is zero")
-		}
-	})
+	tests := []struct {
+		name			string
+		id				uuid.UUID
+		userID			uuid.UUID
+		expectedError	error
+	}{
+		{
+			name: "Success_GetByIdAndUser",
+			id: newCredential.ID,
+			userID: newCredential.UserID,
+			expectedError: nil,
+		},{
+			name: "Failure_ID_Inexistent",
+			id: uuid.New(),
+			userID: newCredential.UserID,
+			expectedError: domain.ErrNotFound,
+		},{
+			name: "Failure_UserID_Inexistent",
+			id: newCredential.ID,
+			userID: uuid.New(),
+			expectedError: domain.ErrNotFound,
+		},
+	}
 
-	t.Run("GetByIdAndUser_Success", func(t *testing.T) {
-		retrieved, err := repo.GetByIdAndUser(ctx, newCredential.ID, newCredential.UserID)
-		
-		if err != nil {
-			t.Fatalf("Error getting credentials: %v", err)
-		}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			retrieved, err := repo.GetByIdAndUser(ctx, tt.id, tt.userID)
 
-		if retrieved == nil {
-			t.Fatalf("User Not Found")
-		}
+			if !errors.Is(err, tt.expectedError){
+				t.Fatalf("Expected error '%v', got '%v'", tt.expectedError, err)
+			}
 
-		if retrieved.ServiceName != newCredential.ServiceName {
-			t.Errorf("ServiceName mismatch: expected %s, got %s", newCredential.ServiceName, retrieved.ServiceName)
-		}
-	})
+			if err == nil {
 
-	t.Run("GetByIdAndUser_Failure_ID_Not_Existing", func(t *testing.T) {
-		idInexistent := "00000000-0000-0000-0000-000000000000"
-		_, err := repo.GetByIdAndUser(ctx, idInexistent, newCredential.UserID)
-		
-		if !errors.Is(err, domain.ErrNotFound) {
-			t.Errorf("Expected error '%v', got '%v'",domain.ErrNotFound,err)
-		}
-	})
+				// Validate fields
+				if retrieved == nil {
+					t.Errorf("Retrieved credentials are nil")
+				}
+				if retrieved.ID != newCredential.ID {
+					t.Errorf("ID mismatch: expected %s, got %s", newCredential.ID, retrieved.ID)
+				}
+				if retrieved.ServiceName != newCredential.ServiceName {
+					t.Errorf("ServiceName mismatch: expected %s, got %s", newCredential.ServiceName, retrieved.ServiceName)
+				}
+				if !bytes.Equal(retrieved.EncryptedData, newCredential.EncryptedData) {
+					t.Errorf("EncryptedData mismatch")
+				}
+				if retrieved.CreatedAt != newCredential.CreatedAt {
+					t.Errorf("CreatedAt mismatch")
+				}
+			}
+		})
+	}
+}
 
-	t.Run("GetByIdAndUser_Failure_userID_Not_Existing", func(t *testing.T) {
-		idInexistent := "00000000-0000-0000-0000-000000000000"
-		_, err := repo.GetByIdAndUser(ctx, newCredential.ID, idInexistent)
-		
-		if !errors.Is(err, domain.ErrNotFound) {
-			t.Errorf("Expected error '%v', got '%v'",domain.ErrNotFound,err)
-		}
-	})
+func TestGetByIdAndService(t *testing.T) {
+	ctx := context.Background()
 
-	t.Run("GetByUserAndService_Success", func(t *testing.T) {
-		retrieved, err := repo.GetByServiceAndUser(ctx, newCredential.ServiceName, newCredential.UserID)
-		
-		// Verify matching data with example
-		if err != nil {
-			t.Fatalf("Error getting credentials: %v", err)
-		}
-		if retrieved == nil {
-			t.Fatalf("User Not Found")
-		}
+	// Setup
+	repo := setupTestVaultRepository(ctx, t)
+	newCredential, err := createExampleCredentials(t)
+	if err != nil { t.Fatalf("Error creating example credentials: %v", err) }
 
-		if retrieved.ID != newCredential.ID {
-			t.Errorf("ID mismatch: expected %s, got %s", newCredential.ID, retrieved.ID)
-		}
+	if err := repo.Save(ctx, newCredential); err != nil {
+		t.Fatalf("Error saving credentials: %v", err)
+	}
 
-		if !bytes.Equal(retrieved.EncryptedData, newCredential.EncryptedData) {
-			t.Errorf("Corrupted encrypted data or not correct. Expected %v, got %v", newCredential.EncryptedData, retrieved.EncryptedData)
-		}
-	})
+	tests := []struct {
+		name			string
+		serviceName		string
+		userID			uuid.UUID
+		expectedError	error
+	}{
+		{
+			name: "Success_GetByIdAndService",
+			serviceName: newCredential.ServiceName,
+			userID: newCredential.UserID,
+			expectedError: nil,
+		},{
+			name: "Failure_Service_Inexistent",
+			serviceName: "service_wrong",
+			userID: newCredential.UserID,
+			expectedError: domain.ErrNotFound,
+		},{
+			name: "Failure_UserID_Inexistent",
+			serviceName: newCredential.ServiceName,
+			userID: uuid.New(),
+			expectedError: domain.ErrNotFound,
+		},
+	}
 
-	t.Run("GetByUserAndService_Failure_Service_Not_Existing", func(t *testing.T) {
-		serviceInexistent := "gabagool"
-		_, err := repo.GetByServiceAndUser(ctx, serviceInexistent, newCredential.UserID)
-		
-		// Verify matching data with example
-		if !errors.Is(err, domain.ErrNotFound) {
-			t.Errorf("Expected error '%v', got '%v'", domain.ErrNotFound, err)
-		}
-	})
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			retrieved, err := repo.GetByServiceAndUser(ctx, tt.serviceName, tt.userID)
 
-	t.Run("GetByUserAndService_Failure_userID_Not_Existing", func(t *testing.T) {
-		idInexistent := "00000000-0000-0000-0000-000000000000"
-		_, err := repo.GetByServiceAndUser(ctx, newCredential.ServiceName, idInexistent)
-		
-		// Verify matching data with example
-		if !errors.Is(err, domain.ErrNotFound) {
-			t.Errorf("Expected error '%v', got '%v'", domain.ErrNotFound,err)
-		}
-	})
+			if !errors.Is(err, tt.expectedError){
+				t.Fatalf("Expected error '%v', got '%v'", tt.expectedError, err)
+			}
+
+			if err == nil {
+
+				// Validate fields
+				if retrieved == nil {
+					t.Errorf("Retrieved credentials are nil")
+				}
+				if retrieved.ID != newCredential.ID {
+					t.Errorf("ID mismatch: expected %s, got %s", newCredential.ID, retrieved.ID)
+				}
+				if retrieved.ServiceName != newCredential.ServiceName {
+					t.Errorf("ServiceName mismatch: expected %s, got %s", newCredential.ServiceName, retrieved.ServiceName)
+				}
+				if !bytes.Equal(retrieved.EncryptedData, newCredential.EncryptedData) {
+					t.Errorf("EncryptedData mismatch")
+				}
+				if retrieved.CreatedAt != newCredential.CreatedAt {
+					t.Errorf("CreatedAt mismatch")
+				}
+			}
+		})
+	}
 }

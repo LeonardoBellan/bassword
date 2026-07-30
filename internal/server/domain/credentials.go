@@ -7,21 +7,18 @@ import (
 )
 
 type Credentials struct {
-	ID            string	`json:"id"`
-	UserID        string	`json:"user_id"`
+	ID            uuid.UUID	`json:"id"`
+	UserID        uuid.UUID	`json:"user_id"`
 	ServiceName   string    `json:"service_name"`	
 	EncryptedData []byte    `json:"encrypted_data"`
 	CreatedAt     time.Time `json:"created_at"`
 }
 
-func NewCredentials(userID string, serviceName string, encryptedData []byte) (*Credentials,error) {
-	if userID == "" {
-		return nil, ErrInvalidUserID
-	}
-	
-	if err := uuid.Validate(userID); err != nil {
-		return nil, ErrInvalidUserID
-	}
+func NewCredentials(userID uuid.UUID, serviceName string, encryptedData []byte) (*Credentials,error) {
+
+	if userID == uuid.Nil {
+        return nil, ErrInvalidUserID
+    }
 	if serviceName == "" {
 		return nil, ErrEmptyServiceName
 	}
@@ -29,7 +26,7 @@ func NewCredentials(userID string, serviceName string, encryptedData []byte) (*C
 		return nil, ErrEmptyEncryptedData
 	}
 
-	id := uuid.NewString()
+	id := uuid.New()
 
 	return &Credentials{
 		ID: id,

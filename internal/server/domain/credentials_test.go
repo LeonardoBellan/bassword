@@ -7,39 +7,43 @@ import (
 )
 
 func TestNewCredentials(t *testing.T) {
+
+	userID := uuid.New()
+	serviceName := "example-service"
+	encryptedData := []byte("encrypted-bytes")
+
 	tests := []struct {
 		name          string
-		userID        string
+		userID        uuid.UUID
 		serviceName   string
 		encryptedData []byte
 		expectedErr   error
 	}{
 		{
 			name:          "Success_Valid_Credentials",
-			userID:        "123e4567-e89b-12d3-a456-426614174000",
-			serviceName:   "example-service",
-			encryptedData: []byte("encrypted-bytes"),
+			userID:        userID,
+			serviceName:   serviceName,
+			encryptedData: encryptedData,
 			expectedErr:   nil,
 		},
 		{
 			name:          "Failure_Empty_Service_Name",
-			userID:        "123e4567-e89b-12d3-a456-426614174000",
+			userID:        userID,
 			serviceName:   "",
-			encryptedData: []byte("encrypted-bytes"),
+			encryptedData: encryptedData,
 			expectedErr:   ErrEmptyServiceName,
 		},
 		{
 			name:          "Failure_Empty_Encrypted_Data",
-			userID:        "123e4567-e89b-12d3-a456-426614174000",
-			serviceName:   "example-service",
+			userID:        userID,
+			serviceName:   serviceName,
 			encryptedData: nil,
 			expectedErr:   ErrEmptyEncryptedData,
-		},
-		{
-			name:          "Failure_Invalid_UserID",
-			userID:        "",
-			serviceName:   "example-service",
-			encryptedData: []byte("encrypted-bytes"),
+		},{
+			name:          "Failure_UserID_Nil",
+			userID:        uuid.Nil,
+			serviceName:   serviceName,
+			encryptedData: encryptedData,
 			expectedErr:   ErrInvalidUserID,
 		},
 	}
@@ -53,17 +57,12 @@ func TestNewCredentials(t *testing.T) {
 			}
 
 			if tt.expectedErr == nil {
-
-				// Check ID
-				if creds.ID == "" {
-					t.Error("failure generating ID, got empty string")
+				
+				// Check fields
+				if creds.ID == uuid.Nil {
+					t.Errorf("Expected id population, got uuid.Nil")
 				}
 
-				if _, err := uuid.Parse(creds.ID); err != nil {
-                    t.Errorf("expected a valid UUID format for ID, got %s (error: %v)", creds.ID, err)
-                }
-
-				// Check fields
 				if creds.UserID != tt.userID {
 					t.Errorf("expected userID %s, got %s", tt.userID, creds.UserID)
 				}

@@ -6,6 +6,7 @@ import (
 	"errors"
 
 	"github.com/LeonardoBellan/bassword/internal/server/domain"
+	"github.com/google/uuid"
 	"github.com/mattn/go-sqlite3"
 )
 
@@ -37,7 +38,7 @@ func (r *SQLiteUserRepository) Save(ctx context.Context, user *domain.User) erro
 	return nil
 }
 
-func (r *SQLiteUserRepository) Get(ctx context.Context, id string) (*domain.User,error) {
+func (r *SQLiteUserRepository) Get(ctx context.Context, id uuid.UUID) (*domain.User,error) {
 	// Get user entry
 	var user domain.User
 	if err := r.conn.QueryRowContext(ctx, selectUserByIdQuery, id).Scan(

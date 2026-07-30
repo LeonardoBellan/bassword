@@ -10,6 +10,7 @@ import (
 
 	"github.com/LeonardoBellan/bassword/internal/server/domain"
 	"github.com/go-chi/chi/v5"
+	"github.com/google/uuid"
 )
 
 // DTO
@@ -20,8 +21,8 @@ type credentialsPayload struct {
 
 // Dependencies
 type VaultService interface {
-	Save(ctx context.Context, userID string, serviceName string, encryptedData []byte) error
-	GetForService(ctx context.Context, serviceName string, userID string) (*domain.Credentials, error)
+	Save(ctx context.Context, userID uuid.UUID, serviceName string, encryptedData []byte) error
+	GetForService(ctx context.Context, serviceName string, userID uuid.UUID) (*domain.Credentials, error)
 }
 
 type VaultHandler struct {
@@ -37,10 +38,12 @@ func (h *VaultHandler) HandleCreate(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	r.Body = http.MaxBytesReader(w, r.Body, 1048576)
 
+	// Get user ID from context
 	envVal := r.Context().Value("user_id")
-	userID, ok := envVal.(string)
+	userID, ok := envVal.(uuid.UUID)
 	if !ok {
 		RespondWithError(w, http.StatusUnauthorized, "Unauthorized")
+		return
 	}
 	
 	// Decode body
@@ -83,9 +86,12 @@ func (h *VaultHandler) HandleCreate(w http.ResponseWriter, r *http.Request) {
 func (h *VaultHandler) HandleGetByService(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
+	// Retrieve serviceName from request
 	serviceName := chi.URLParam(r, "service")
+
+	// Retrieve user ID from context
 	envVal := r.Context().Value("user_id")
-	userID, ok := envVal.(string)
+	userID, ok := envVal.(uuid.UUID)
 	if !ok {
 		RespondWithError(w, http.StatusUnauthorized, "Unauthorized")
 	}
