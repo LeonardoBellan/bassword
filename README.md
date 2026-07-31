@@ -1,44 +1,57 @@
 # bassword
 
-Lightweight CLI password manager built in Go. This is an educational project exploring CLI development and basic cryptography.
+Lightweight CLI password manager built in Go.
+This is an educational project exploring golang development, client-server architecture and relative security measures.
+
+## Disclaimer
+
+**Warning:** This is a learning project and has not been audited by security professionals. Do not use it for sensitive, real-world credentials. Use audited solutions like Bitwarden, 1Password, or KeePass for production.
 
 ## Features
 
-- **Local Storage:** Passwords are encrypted and stored locally.
-- **Security Concepts:** Implements key derivation and symmetric encryption.
-- **Cobra CLI:** Intuitive terminal interface.
+- **Client-Server model** - Decoupled client and server backend.
+- **Cobra CLI** - Simple and intuitive terminal interface with memory wiping for the credentials.
+- **Zero-Knowledge Architecture** - Encryption and decryption are performed strictly on the client side; the server never receives plain text data or the master passsword. - **Key Derivation and Separation** - Cryptographic keys and the authHash are derived from the user's master password using argon2id. - **Client-Side Encryption** - Credentials are secured locally using AES-GCM symmetric encryption before transmission.
+- **Authentication** - Performed by sending an authentication hash, which is re-hashed on the server-side to prevent database leakage.
+- **Blind indexing** - Supports querying without exposing the user's used services.
+- **Cloud-Ready Architecture** - Decoupled business logic and storage layer for fast db migration.
 
-## Installation and initialization
+## Installation & Quick Start
 
-Make sure you have Go (1.16+) installed, then run:
+### Prerequisites
+
+- Go 1.26 or higher
+  _Ensure your Go binary path (e.g., `~/go/bin`) is in your system's `PATH`._
+
+### 1. Installation
+
+Clone the repository and install the binaries of client and server.
 
 ```bash
 git clone https://github.com/yourusername/bassword.git
 cd bassword
-go install
+go install ...
 ```
 
-_Ensure your Go binary path (e.g., `~/go/bin`) is in your system's `PATH`._
+### 2. Running the server
 
-Then setup the database and create your Master Password
+Start the backend server, it will create a folder '.bassword' in your home directory with a sqlite db 'passwords.db' inside.
 
 ```bash
-bassword init
+bassword-server
 ```
 
-_Note: The Master Password is used for encryption and cannot be recovered if lost._
+### 3. Register a user in the CLI client
 
-## Database / Initialization
+In a new terminal window, register your client and start managing credentials:
 
-- **DB canary:** The app stores a KDF salt and an encrypted canary value in the `app_config` table (row `id = 1`) to verify the master password.
-- **Canary plaintext:** `VERIFICATION_OK`.
-- **Developer note:** `internal/db/consts.go`contains SQL statements and constants used by the DB layer (canary value, table creation SQL, queries). The canary row is parametrized using `canaryID` to avoid magic literals.
-
-If you change the canary text or the DB schema, reinitialize the database with `bassword init`.
+```bash
+bassword register user@example.com
+```
 
 ---
 
-## Usage
+## Usage of the CLI client
 
 ### Add a Password
 
@@ -62,21 +75,6 @@ bassword get [service]
 ```
 
 ---
-
-## Security Measures
-
-As an educational tool, this project implements standard practices:
-
-1. **Key Derivation:** Master passwords are not stored; they generate a 256-bit encryption using Argon2id.
-2. **Encryption:** Data is secured using AES-256-GCM.
-3. **Local Database:** No data leaves your machine.
-4. **Memory Wipe:** After using the master password and passwords they are removed from memory.
-5. **Clipboard timeout:** The clipboard is cleared (If still containing the password) after a certain amount of time.
----
-
-## Disclaimer
-
-**Warning:** This is a learning project and has not been audited by security professionals. Do not use it for sensitive, real-world credentials. Use audited solutions like Bitwarden, 1Password, or KeePass for production.
 
 ## License
 

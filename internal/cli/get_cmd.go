@@ -3,6 +3,7 @@ package cli
 import (
 	"fmt"
 
+	"github.com/LeonardoBellan/bassword/internal/shared/crypto"
 	"github.com/spf13/cobra"
 )
 
@@ -24,7 +25,7 @@ func NewGetCmd(state *AppState) *cobra.Command {
 			serviceName := args[0]
 
 			credentials, err := state.Client.GetPassword(state.EncryptionKey, serviceName)
-			//defer crypto.Wipe(credentials.Password) //Clean password from memory
+			defer crypto.Wipe(credentials.Password) //Clean password from memory
 			if err != nil { return err }
 
 			// Pass credentials to user
