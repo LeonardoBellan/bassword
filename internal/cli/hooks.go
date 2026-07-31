@@ -1,6 +1,10 @@
 package cli
 
 import (
+	"errors"
+	"fmt"
+
+	"github.com/LeonardoBellan/bassword/internal/client"
 	"github.com/LeonardoBellan/bassword/internal/shared/crypto"
 )
 
@@ -32,6 +36,10 @@ func RequireLogin(state *AppState) error {
 
 	// Login
 	if err := state.Client.Login(state.Email, state.AuthHash); err != nil {
+		if errors.Is(err, client.ErrUnauthorized) {
+			return fmt.Errorf("Incorrect master password. Please try again.")
+		}
+
 		return err
 	}
 

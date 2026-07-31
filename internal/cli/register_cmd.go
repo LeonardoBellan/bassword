@@ -1,6 +1,8 @@
 package cli
 
 import (
+	"fmt"
+
 	"github.com/spf13/cobra"
 )
 
@@ -21,6 +23,7 @@ func NewInitCmd(state *AppState) *cobra.Command {
 			err := state.Client.Register(email, state.AuthHash)
 			if err != nil { return err }
 
+			fmt.Println("User registered successfully")
 			return nil
 		},
 	}

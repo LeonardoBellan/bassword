@@ -60,6 +60,8 @@ func NewAddCmd(state *AppState) *cobra.Command {
 			state.Client.AddPassword(state.EncryptionKey, serviceName, credentials)
 
 			//Copy password in clipboard
+			fmt.Println("Credentials successfully created!")
+			fmt.Println("Username: ", credentials.Username)
 			return copyPasswordToClipboard(plaintext, state.ClipboardTimeout)
 		},
 	}

@@ -62,6 +62,9 @@ func (c *Client) Login(email string, authHash []byte) error {
 
 	// Response
 	if resp.StatusCode != http.StatusOK {
+		if resp.StatusCode == http.StatusUnauthorized {
+			return ErrUnauthorized
+		}
 		return fmt.Errorf("Login failed with status: %v", resp.Status)
 	}
 
@@ -109,9 +112,6 @@ func (c *Client) Register(email string, authHash []byte) error {
 
 func (c *Client) AddPassword(encryptionKey []byte, serviceName string, cred *Credentials) error {
 
-	fmt.Println(serviceName)
-	fmt.Println("cred:", cred)
-
 	// Parse JSON
 	dataJSON, err := json.Marshal(cred)
 	if err != nil { return err }
@@ -121,15 +121,11 @@ func (c *Client) AddPassword(encryptionKey []byte, serviceName string, cred *Cre
 	ciphertext, err := crypto.Encrypt(dataJSON, encryptionKey)
 	if err != nil { return err }
 
-	fmt.Println(ciphertext)
-
 	// Encode Base64URL
 	reqBody, err := json.Marshal(credentialsPayload{
 		ServiceName: serviceName,
 		EncryptedData: base64.URLEncoding.EncodeToString(ciphertext),
 	})
-
-	fmt.Println(reqBody)
 
 	// Request
 	endpoint := c.BaseURL.ResolveReference(&url.URL{Path: "/api/v1/credentials/"})

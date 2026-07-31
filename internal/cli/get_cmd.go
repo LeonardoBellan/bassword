@@ -14,6 +14,8 @@ func NewGetCmd(state *AppState) *cobra.Command {
 		Short: "Prints the password associated to the service",
 		Args:  cobra.ExactArgs(1),
 		PreRunE: func(cmd *cobra.Command, args []string) error {
+
+			cmd.SilenceUsage = true
 			return RequireLogin(state)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
