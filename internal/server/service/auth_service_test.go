@@ -140,9 +140,8 @@ func TestAuthService_Authenticate(t *testing.T) {
 			email:    email,
 			authHash: validAuthHash,
 			setupRepo: func(repo *FakeUserRepository) {
-				// Dobbiamo generare hash e salt reali affinché crypto.VerifyAuthHash passi
-				serverHash, serverSalt, _ := crypto.HashAuthKey(validAuthHash)
-				user, _ := domain.NewUser(email, serverHash, serverSalt)
+				secret, _ := crypto.HashSecure(validAuthHash)
+				user, _ := domain.NewUser(email, secret)
 				_ = repo.Save(context.Background(), user)
 			},
 			simulateError: false,
@@ -153,7 +152,6 @@ func TestAuthService_Authenticate(t *testing.T) {
 			email:    "nonexistent@example.com",
 			authHash: validAuthHash,
 			setupRepo: func(repo *FakeUserRepository) {
-				// Repo vuoto
 			},
 			simulateError: false,
 			expectedError: domain.ErrUserNotFound,
@@ -163,8 +161,8 @@ func TestAuthService_Authenticate(t *testing.T) {
 			email:    email,
 			authHash: invalidAuthHash, // Password errata
 			setupRepo: func(repo *FakeUserRepository) {
-				serverHash, serverSalt, _ := crypto.HashAuthKey(validAuthHash)
-				user, _ := domain.NewUser(email, serverHash, serverSalt)
+				secret, _ := crypto.HashSecure(validAuthHash)
+				user, _ := domain.NewUser(email, secret)
 				_ = repo.Save(context.Background(), user)
 			},
 			simulateError: false,

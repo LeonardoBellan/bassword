@@ -1,53 +1,56 @@
 package domain
 
 import (
-	"bytes"
 	"testing"
 
 	"github.com/google/uuid"
 )
 
 func TestNewUser(t *testing.T) {
+	email := "user@example.com"
+	secretHash := "$argon2id$v=19$m=65536,t=3,p=4$c29tZXNhbHQ$qU31Xy16pI36O6H0Xb1sW5vK1c7O5Y2X"
+
 	tests := []struct {
 		name       string
 		email      string
-		serverHash []byte
-		serverSalt []byte
+		secretHash string
 		expectedErr error
 	}{
 		{
 			name:       "Success_Valid_User",
-			email:      "user@example.com",
-			serverHash: []byte("super-secret-hash"),
-			serverSalt: []byte("random-salt"),
+			email:      email,
+			secretHash: secretHash,
 			expectedErr: nil,
 		},
 		{
-			name:       "Failure_Empty_Email",
+			name:       "Failure_Missing_Email",
 			email:      "",
-			serverHash: []byte("super-secret-hash"),
-			serverSalt: []byte("random-salt"),
+			secretHash: secretHash,
+			expectedErr: ErrMissingEmail,
+		},
+		{
+			name:       "Failure_Invalid_Email",
+			email:      "userexample",
+			secretHash: secretHash,
 			expectedErr: ErrInvalidEmail,
 		},
 		{
-			name:       "Failure_Empty_Hash",
+			name:       "Failure_Missing_Hash",
 			email:      "user@example.com",
-			serverHash: nil, 
-			serverSalt: []byte("random-salt"),
-			expectedErr: ErrEmptyHash,
+			secretHash: "", 
+			expectedErr: ErrMissingSecretHash,
 		},
 		{
-			name:       "Failure_Empty_Salt",
-			email:      "user@example.com",
-			serverHash: []byte("super-secret-hash"),
-			serverSalt: nil,
-			expectedErr: ErrEmptySalt,
+			name:       "Failure_Invalid_Hash",
+			email:      email,
+			secretHash: "$argon2id$v=19$m=65536,t=3,p=4$c29tZXNhbHQ",
+			expectedErr: ErrInvalidPHCFormat,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			user, err := NewUser(tt.email, tt.serverHash, tt.serverSalt)
+			user, err := NewUser(tt.email, tt.secretHash)
 
 			// Verify expected error
 			if err != tt.expectedErr {
@@ -66,12 +69,9 @@ func TestNewUser(t *testing.T) {
 					t.Errorf("expected email %s, got %s", tt.email, user.Email)
 				}
 				
-				if !bytes.Equal(user.ServerHash, tt.serverHash) {
-					t.Errorf("expected serverHash %x, got %x", tt.serverHash, user.ServerHash)
-				}
-				if !bytes.Equal(user.ServerSalt, tt.serverSalt) {
-					t.Errorf("expected serverSalt %x, got %x", tt.serverSalt, user.ServerSalt)
-				}
+				if user.SecretHash != tt.secretHash {
+					t.Errorf("Expected secret hash %s, got %s", tt.secretHash, user.SecretHash)
+				} 
 			}
 		})
 	}

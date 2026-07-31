@@ -59,7 +59,7 @@ func TestInitializeDB(t *testing.T) {
 		}
 
 		// Check tables
-		_, err := conn.Exec("INSERT INTO users (email, Server_Hash, Server_Salt) VALUES ('test_user',1,1)")
+		_, err := conn.Exec("INSERT INTO users (email, secret_hash) VALUES ('test_user', 'test_hash')")
     	if err != nil {
      	   t.Errorf("Could not insert into 'users' after initialization: %v", err)
     	}

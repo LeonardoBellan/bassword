@@ -103,7 +103,6 @@ func (h *VaultHandler) HandleGetByService(w http.ResponseWriter, r *http.Request
 
 	credentials,err := h.service.GetForService(ctx, serviceName, userID);
 	if err != nil {
-		// TODO - Map internal errors
 
 		if errors.Is(err, domain.ErrCredentialsNotFound) {
 			RespondWithError(w, http.StatusNotFound, "Credentials not found")

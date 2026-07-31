@@ -2,7 +2,9 @@ package crypto
 
 import (
 	"bytes"
+	"encoding/base64"
 	"errors"
+	"strings"
 	"testing"
 
 	"golang.org/x/crypto/argon2"
@@ -114,116 +116,151 @@ func TestDeriveKeys(t *testing.T) {
 	})
 }
 
-func TestHashAuthKey(t *testing.T) {
+func TestHashSecure(t *testing.T) {
 	secret := []byte("secret_password")
-	hash, salt, err := HashAuthKey(secret)
+	hashPHC, err := HashSecure(secret)
 	if err != nil {
 		t.Fatalf("Error during secret hashing: %v", err)
 	}
 
-	t.Run("Hash_Salt_Length", func (t *testing.T) {
-		if len(hash) != 32 {
-			t.Errorf("Invalid Hash length: expected %v, got %v", 32, len(hash))
+	t.Run("PHC_Format", func(t *testing.T) {
+		if !strings.HasPrefix(hashPHC, "$argon2id$v=19$m=65536,t=2,p=4$") {
+			t.Errorf("Invalid PHC prefix format: got %v", hashPHC)
 		}
-		
-		if len(salt) != 16 {
-			t.Errorf("Invalid salt length: expected %v, got %v", 32, len(salt))
+
+		parts := strings.Split(hashPHC, "$")
+		if len(parts) != 6 {
+			t.Fatalf("Invalid PHC parts count: expected 6, got %d", len(parts))
+		}
+
+		if len(parts[4]) == 0 {
+			t.Error("Salt portion in PHC is empty")
+		}
+
+		if len(parts[5]) == 0 {
+			t.Error("Hash portion in PHC is empty")
 		}
 	})
 
-	t.Run("Hash_Salt_Univocity", func (t *testing.T) {
+	t.Run("Hash_Univocity", func(t *testing.T) {
 		t.Parallel()
 
-		hash2, salt2, err := HashAuthKey(secret)
+		hashPHC2, err := HashSecure(secret)
 		if err != nil {
 			t.Fatalf("Error during secret hashing: %v", err)
 		}
 
-		if bytes.Equal(hash, hash2) {
-			t.Errorf("Error computed hashes are equal")
-		}
-
-		if bytes.Equal(salt, salt2) {
-			t.Error("Error generated salt is equal")
+		if hashPHC == hashPHC2 {
+			t.Errorf("Error: computed hashes are identically salted")
 		}
 	})
 
-	t.Run("Success_Reproducibility", func (t *testing.T) {
+	t.Run("Success_Reproducibility", func(t *testing.T) {
 		t.Parallel()
 
-		hashVerify := argon2.IDKey(secret, salt, 1, 64*1024, 4, 32)
+		parts := strings.Split(hashPHC, "$")
+		if len(parts) != 6 {
+			t.Fatalf("Malformed PHC string for reproducibility test")
+		}
 
-		if !bytes.Equal(hash, hashVerify) {
-			t.Error("Error mismatch between hash using same salt")
+		saltB64 := parts[4]
+		hashB64 := parts[5]
+
+		decodedSalt, err := base64.RawStdEncoding.DecodeString(saltB64)
+		if err != nil {
+			t.Fatalf("Error decoding salt from base64: %v", err)
+		}
+
+		// Recompute hash using same parameters
+		hashVerifyRaw := argon2.IDKey(secret, decodedSalt, 2, 64*1024, 4, 32)
+		hashVerifyB64 := base64.RawStdEncoding.EncodeToString(hashVerifyRaw)
+
+		if hashB64 != hashVerifyB64 {
+			t.Error("Error: mismatch between re-computed hash using extracted salt")
 		}
 	})
 
-	t.Run("Success_Empty_Secret", func (t *testing.T){
+	t.Run("Success_Empty_Secret", func(t *testing.T) {
 		t.Parallel()
-		
-		hash, salt, err := HashAuthKey([]byte{})
+
+		hash, err := HashSecure([]byte{})
 		if err != nil {
 			t.Fatalf("Error during empty secret hashing: %v", err)
 		}
 
-		if len(hash) != 32 || len(salt) != 16{
-			t.Errorf("Invalid hash or salt for empty secret")
+		if !strings.HasPrefix(hash, "$argon2id$") {
+			t.Errorf("Invalid PHC format for empty secret")
 		}
 	})
 
-	t.Run("Success_Nil_Secret", func (t *testing.T){
+	t.Run("Success_Nil_Secret", func(t *testing.T) {
 		t.Parallel()
-		
-		hash, salt, err := HashAuthKey(nil)
+
+		hash, err := HashSecure(nil)
 		if err != nil {
 			t.Fatalf("Error during nil secret hashing: %v", err)
 		}
 
-		if len(hash) != 32 || len(salt) != 16{
-			t.Errorf("Invalid hash or salt for nil secret")
+		if !strings.HasPrefix(hash, "$argon2id$") {
+			t.Errorf("Invalid PHC format for nil secret")
 		}
 	})
-
 }
 
-func TestVerifyAuthHash(t *testing.T) {
+func TestVerifySecretSecure(t *testing.T) {
 	secretCorrect := []byte("correct_secret_password")
 	secretIncorrect := []byte("incorrect_secret_password")
-	hash, salt, err := HashAuthKey(secretCorrect)
+
+	hashPHC, err := HashSecure(secretCorrect)
 	if err != nil {
 		t.Fatalf("Error during secret hashing: %v", err)
 	}
 
-	t.Run("Success_Correct_Secret", func (t *testing.T){
+	t.Run("Success_Correct_Secret", func(t *testing.T) {
 		t.Parallel()
 
-		err = VerifyAuthHash(secretCorrect, hash, salt); 
+		err = VerifySecretSecure(secretCorrect, hashPHC)
 		if err != nil {
 			t.Errorf("Error verifying hash: %v", err)
 		}
 	})
 
-	t.Run("Failure_Incorrect_Secret", func (t *testing.T){
+	t.Run("Failure_Incorrect_Secret", func(t *testing.T) {
 		t.Parallel()
-		
-		err = VerifyAuthHash(secretIncorrect, hash, salt)
+
+		err = VerifySecretSecure(secretIncorrect, hashPHC)
 		if !errors.Is(err, ErrMismatchedSecret) {
 			t.Errorf("Error comparing secrets: expected %v, got %v", ErrMismatchedSecret, err)
 		}
 	})
 
-	t.Run("Failure_Incorrect_Salt", func (t *testing.T){
+	t.Run("Failure_Incorrect_Salt", func(t *testing.T) {
 		t.Parallel()
-		
-		saltIncorrect := make([]byte,16)
-		err = VerifyAuthHash(secretCorrect, hash, saltIncorrect)
+
+		components := strings.Split(hashPHC, "$")
+		if len(components) != 6 {
+			t.Fatalf("Invalid PHC format generated by HashSecure")
+		}
+
+		components[4] = "AAAAAAAAAAAAAAAAAAAAAA"
+		tamperedHashPHC := strings.Join(components, "$")
+
+		err = VerifySecretSecure(secretCorrect, tamperedHashPHC)
 		if !errors.Is(err, ErrMismatchedSecret) {
-			t.Errorf("Error comparing secrets: expected %v, got %v", ErrMismatchedSecret, err)
+			t.Errorf("Error comparing secrets with wrong salt: expected %v, got %v", ErrMismatchedSecret, err)
 		}
 	})
 
+	t.Run("Failure_Malformed_Hash", func(t *testing.T) {
+		t.Parallel()
+
+		// Verifichiamo che il parsing iniziale fallisca correttamente
+		err = VerifySecretSecure(secretCorrect, "invalid_hash_string")
+		if err == nil {
+			t.Errorf("Expected error for malformed hash string, got nil")
+		}
+	})
 }
-
 func TestEncrypt(t *testing.T) {
 	masterKey := bytes.Repeat([]byte("k"), 32)
 	plaintext := []byte("correct-horse-battery-staple")

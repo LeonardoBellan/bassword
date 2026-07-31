@@ -25,7 +25,7 @@ func (req *authRequest) isValid() error {
 		return domain.ErrInvalidEmail
 	}
 	if len(req.AuthHash) == 0 {
-		return domain.ErrEmptyHash
+		return domain.ErrMissingSecretHash
 	}
 
 	return nil
@@ -108,7 +108,7 @@ func (h *AuthHandler) HandleLogin(w http.ResponseWriter, r *http.Request) {
 			RespondWithError(w, http.StatusBadRequest, "Invalid email format")
 			return
 		}
-		if errors.Is(err, domain.ErrEmptyHash){
+		if errors.Is(err, domain.ErrMissingSecretHash){
 			RespondWithError(w, http.StatusBadRequest, "Field 'auth_hash' is required")
 			return
 		}

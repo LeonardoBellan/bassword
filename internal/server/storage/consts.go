@@ -4,8 +4,7 @@ const (
 	createUsersTableSQL = `CREATE TABLE IF NOT EXISTS users (
             id TEXT PRIMARY KEY, 
             email TEXT NOT NULL UNIQUE,
-            server_hash BLOB NOT NULL,
-            server_salt BLOB NOT NULL,
+            secret_hash TEXT NOT NULL,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         );`
 
@@ -20,16 +19,16 @@ const (
 
 	// Users
 	insertUserQuery = `
-        INSERT INTO users(id, email, server_hash, server_salt)
-        VALUES (?, ?, ?, ?)
+        INSERT INTO users(id, email, secret_hash)
+        VALUES (?, ?, ?)
         RETURNING created_at`
 
 	selectUserByIdQuery = `
-        SELECT id, email, server_hash, server_salt
+        SELECT id, email, secret_hash
         FROM users WHERE id = ?`
 
 	selectUserByEmailQuery = `
-        SELECT id, email, server_hash, server_salt
+        SELECT id, email, secret_hash
         FROM users WHERE email = ?`
 
 	// Credentials

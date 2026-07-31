@@ -1,7 +1,6 @@
 package storage_test
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"testing"
@@ -16,9 +15,8 @@ func createExampleUser(t *testing.T) (*domain.User, error) {
 	t.Helper()
 
 	email := "user@example.com"
-	serverHash := []byte("hash_example1234")
-	serverSalt := []byte("salt_example1234")
-	return domain.NewUser(email, serverHash, serverSalt)
+	secretHash := "$argon2id$v=19$m=65536,t=3,p=4$c29tZXNhbHQ$qU31Xy16pI36O6H0Xb1sW5vK1c7O5Y2X"
+	return domain.NewUser(email, secretHash)
 }
 
 // SetupTestUserRepository initializes a repository
@@ -55,7 +53,7 @@ func TestUserRepository_Save(t *testing.T) {
 
 }
 
-func TestGet(t *testing.T) {
+func TestUserRepository_Get(t *testing.T) {
 	ctx := context.Background()
 
 	// Setup
@@ -73,7 +71,7 @@ func TestGet(t *testing.T) {
 		expectedError	error
 	}{
 		{
-			name: "Success_GetById",
+			name: "Success_Get",
 			id: newUser.ID,
 			expectedError: nil,
 		},{
@@ -102,18 +100,15 @@ func TestGet(t *testing.T) {
 				if retrieved.Email != newUser.Email {
 					t.Errorf("Email mismatch: expected %v, got %v", newUser.Email, retrieved.Email)
 				}
-				if !bytes.Equal(retrieved.ServerHash, newUser.ServerHash) {
-					t.Errorf("ServerHash mismatch")
-				}
-				if !bytes.Equal(retrieved.ServerSalt, newUser.ServerSalt) {
-					t.Errorf("ServerSalt mismatch")
+				if retrieved.SecretHash != newUser.SecretHash {
+					t.Errorf("ServerHash mismatch: expected %s, got %s", newUser.SecretHash, retrieved.SecretHash)
 				}
 			}
 		})
 	}
 }
 
-func TestGetByEmail(t *testing.T) {
+func TestUserRepository_GetByEmail(t *testing.T) {
 	ctx := context.Background()
 
 	// Setup
@@ -161,11 +156,8 @@ func TestGetByEmail(t *testing.T) {
 				if retrieved.Email != newUser.Email {
 					t.Errorf("Email mismatch: expected %v, got %v", newUser.Email, retrieved.Email)
 				}
-				if !bytes.Equal(retrieved.ServerHash, newUser.ServerHash) {
-					t.Errorf("ServerHash mismatch")
-				}
-				if !bytes.Equal(retrieved.ServerSalt, newUser.ServerSalt) {
-					t.Errorf("ServerSalt mismatch")
+				if retrieved.SecretHash != newUser.SecretHash {
+					t.Errorf("ServerHash mismatch: expected %s, got %s", newUser.SecretHash, retrieved.SecretHash)
 				}
 			}
 			
