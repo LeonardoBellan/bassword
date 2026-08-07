@@ -38,6 +38,7 @@ func NewAddCmd(state *AppState) *cobra.Command {
 				return fmt.Errorf("--length must be greater than 0")
 			}
 
+			cmd.SilenceUsage = true
 			return RequireLogin(state)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {

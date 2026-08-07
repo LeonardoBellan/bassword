@@ -14,7 +14,7 @@ import (
 // Authentication
 type authRequest struct {
 	Email   string 	`json:"email"`
-	AuthHash string `json:"auth_hash"`
+	AuthHash []byte `json:"auth_hash"`
 }
 
 // DTO
@@ -73,7 +73,7 @@ func (h *AuthHandler) HandleRegister(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.service.Register(ctx, req.Email, []byte(req.AuthHash)); err != nil {		
+	if err := h.service.Register(ctx, req.Email, req.AuthHash); err != nil {        
 		if errors.Is(err, domain.ErrUserExists){
 			RespondWithError(w, http.StatusConflict, "User already registered")
 			return
@@ -118,7 +118,7 @@ func (h *AuthHandler) HandleLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token,err :=  h.service.Authenticate(ctx, req.Email, []byte(req.AuthHash))
+	token,err :=  h.service.Authenticate(ctx, req.Email, req.AuthHash)
 	if err != nil {
 
 		// Authorization errors

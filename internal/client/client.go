@@ -5,8 +5,10 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/LeonardoBellan/bassword/internal/shared/crypto"
@@ -52,7 +54,6 @@ func (c *Client) Login(email string, authHash []byte) error {
 
 	endpoint := c.BaseURL.ResolveReference(&url.URL{Path: "/api/v1/login"})
 
-	// Request
 	req, err := http.NewRequest("POST", endpoint.String(), bytes.NewBuffer(reqBody))
 	if err != nil { return err }
 	
@@ -62,10 +63,11 @@ func (c *Client) Login(email string, authHash []byte) error {
 
 	// Response
 	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
 		if resp.StatusCode == http.StatusUnauthorized {
-			return ErrUnauthorized
+			return fmt.Errorf("%w: %s", ErrUnauthorized, strings.TrimSpace(string(body)))
 		}
-		return fmt.Errorf("Login failed with status: %v", resp.Status)
+		return fmt.Errorf("Login failed with status: %v; body: %s", resp.Status, strings.TrimSpace(string(body)))
 	}
 
 	type LoginResponse struct {
@@ -95,6 +97,7 @@ func (c *Client) Register(email string, authHash []byte) error {
 	
 	// Request
 	endpoint := c.BaseURL.ResolveReference(&url.URL{Path: "/api/v1/register"})
+
 	req, err := http.NewRequest("POST", endpoint.String(), bytes.NewBuffer(reqBody))
 	if err != nil { return err }
 	
@@ -104,7 +107,8 @@ func (c *Client) Register(email string, authHash []byte) error {
 
 	// Response
 	if resp.StatusCode != http.StatusCreated {
-		return fmt.Errorf("Registration failed with status: %v", resp.Status)
+		body, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("Registration failed with status: %v; body: %s", resp.Status, strings.TrimSpace(string(body)))
 	}
 
 	return nil

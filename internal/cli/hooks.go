@@ -29,7 +29,6 @@ func RequireLogin(state *AppState) error {
 		return nil
 	}
 
-	fmt.Println(state.Email)
 	if state.Email == "" {
 		return client.ErrNotRegistered
 	}
@@ -40,9 +39,9 @@ func RequireLogin(state *AppState) error {
 	}
 
 	// Login
-	if err := state.Client.Login(state.Email, state.AuthHash); err != nil {
+	if err := state.Client.Login(state.Email, state.AuthHash); err != nil {        
 		if errors.Is(err, client.ErrUnauthorized) {
-			return fmt.Errorf("Incorrect master password. Please try again.")
+			return fmt.Errorf("Invalid credentials. Please try again.")
 		}
 
 		return err

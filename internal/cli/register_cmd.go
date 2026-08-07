@@ -13,18 +13,18 @@ func NewRegisterCmd(state *AppState) *cobra.Command {
 		Short: "Registers a new user",
 		Long: "",
 		PreRunE: func(cmd *cobra.Command, args []string) error {
+			if len(args) > 0 {
+				state.Email = args[0]
+			}
 			return RequireMasterPassword(state)
 		},
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			
-			// Get input
-			email := args[0]
-
-			err := state.Client.Register(email, state.AuthHash)
+			err := state.Client.Register(state.Email, state.AuthHash)
 			if err != nil { return err }
 
-			viper.Set("email", email)
+			viper.Set("email", state.Email)
 			SaveConfig()
 
 
