@@ -29,6 +29,11 @@ func RequireLogin(state *AppState) error {
 		return nil
 	}
 
+	fmt.Println(state.Email)
+	if state.Email == "" {
+		return client.ErrNotRegistered
+	}
+
 	// Ask master password if it was not asked before
 	if state.AuthHash == nil {
 		RequireMasterPassword(state)

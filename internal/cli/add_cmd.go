@@ -2,11 +2,13 @@ package cli
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/LeonardoBellan/bassword/internal/client"
 	"github.com/LeonardoBellan/bassword/internal/shared/crypto"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 func NewAddCmd(state *AppState) *cobra.Command {
@@ -67,8 +69,12 @@ func NewAddCmd(state *AppState) *cobra.Command {
 	}
 
 	// Flags
+	cmd.Flags().Duration("clipboard-clear", 30*time.Second, "clipboard clear timeout")	
+	viper.BindPFlag("clipboard_timeout", cmd.Flags().Lookup("clipboard-clear"))
+	
 	cmd.Flags().BoolVarP(&isRandom, "random", "r", false, "generate a random password instead of prompting")
 	cmd.Flags().IntVarP(&length, "length", "l", 16, "length of the generated password (requires --random and must be greater than 0)")
+
 
 	return cmd
 }

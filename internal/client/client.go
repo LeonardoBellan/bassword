@@ -38,7 +38,7 @@ func (c *Client) doRequest(req *http.Request) (*http.Response, error) {
 
 type authRequest struct {
 	Email   string 	`json:"email"`
-	AuthHash string `json:"auth_hash"`
+	AuthHash []byte `json:"auth_hash"`
 }
 
 func (c *Client) Login(email string, authHash []byte) error {
@@ -46,7 +46,7 @@ func (c *Client) Login(email string, authHash []byte) error {
 	// Setup
 	reqBody, err := json.Marshal(authRequest{
 		Email: email,
-		AuthHash: string(authHash),
+		AuthHash: authHash,
 	})
 	if err != nil { return err }
 
@@ -89,7 +89,7 @@ func (c *Client) Register(email string, authHash []byte) error {
 	// Setup
 	reqBody, err := json.Marshal(authRequest{
 		Email: email,
-		AuthHash: string(authHash),
+		AuthHash: authHash,
 	})
 	if err != nil { return err }
 	

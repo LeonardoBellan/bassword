@@ -4,7 +4,6 @@ import (
 	"log"
 	"net/url"
 	"os"
-	"time"
 
 	"github.com/LeonardoBellan/bassword/internal/cli"
 	"github.com/LeonardoBellan/bassword/internal/client"
@@ -24,7 +23,7 @@ func main() {
 		
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 			// Initialize cobra config
-			initConfig()
+			cli.InitConfig()
 
 			email := viper.GetString("email")
 			serverAddress := viper.GetString("server_address")
@@ -46,10 +45,7 @@ func main() {
 
 	rootCmd.TraverseChildren = true
 
-	rootCmd.PersistentFlags().Duration("clipboard-clear", 30*time.Second, "clipboard clear timeout")	
-	viper.BindPFlag("clipboard_clear", rootCmd.PersistentFlags().Lookup("clipboard-clear"))
-
-	rootCmd.AddCommand(cli.NewInitCmd(&appState))
+	rootCmd.AddCommand(cli.NewRegisterCmd(&appState))
 	rootCmd.AddCommand(cli.NewAddCmd(&appState))
 	rootCmd.AddCommand(cli.NewGetCmd(&appState))
 
@@ -58,27 +54,3 @@ func main() {
 	}
 }
 
-// initConfig configura Viper per cercare file e variabili d'ambiente
-func initConfig() {
-	// Default values
-	viper.SetDefault("server_address", "http://localhost:8080")
-
-	// Path
-	home, err := os.UserHomeDir()
-	if err == nil {
-		viper.AddConfigPath(home)
-		viper.SetConfigType("yaml")
-		viper.SetConfigName(".bassword")
-	}
-
-	// Env variables
-	viper.SetEnvPrefix("BASSWORD")
-	viper.AutomaticEnv()
-
-	// Open config file
-	if err := viper.ReadInConfig(); err != nil {
-		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
-			log.Printf("Warning: error reading config file: %v", err)
-		}
-	}
-}

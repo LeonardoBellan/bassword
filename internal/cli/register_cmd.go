@@ -4,9 +4,10 @@ import (
 	"fmt"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
-func NewInitCmd(state *AppState) *cobra.Command {
+func NewRegisterCmd(state *AppState) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "register <email>",
 		Short: "Registers a new user",
@@ -22,6 +23,10 @@ func NewInitCmd(state *AppState) *cobra.Command {
 
 			err := state.Client.Register(email, state.AuthHash)
 			if err != nil { return err }
+
+			viper.Set("email", email)
+			SaveConfig()
+
 
 			fmt.Println("User registered successfully")
 			return nil
