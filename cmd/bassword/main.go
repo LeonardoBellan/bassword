@@ -27,7 +27,7 @@ func main() {
 
 			email := viper.GetString("email")
 			serverAddress := viper.GetString("server_address")
-			clipboardTimeout := viper.GetDuration("clipboard_clear")
+			clipboardTimeout := viper.GetDuration("clipboard_timeout")
 
 			apiURL, err := url.Parse(serverAddress)
 			if err != nil {
