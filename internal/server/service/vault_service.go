@@ -11,7 +11,7 @@ import (
 type VaultRepository interface {
 	Save(ctx context.Context, credentials *domain.Credentials) error
 	GetByIdAndUser(ctx context.Context, id uuid.UUID, userID uuid.UUID) (*domain.Credentials, error)
-	GetByServiceAndUser(ctx context.Context, serviceName string, userID uuid.UUID) (*domain.Credentials,error)
+	GetByServiceAndUser(ctx context.Context, serviceNameIndex []byte, userID uuid.UUID) (*domain.Credentials,error)
 }
 
 type VaultService struct {
@@ -22,16 +22,16 @@ func NewVaultService(r VaultRepository) *VaultService {
 	return &VaultService{repo:r}
 }
 
-func (s *VaultService) Save(ctx context.Context, userID uuid.UUID, serviceName string, encryptedData []byte) error{	
+func (s *VaultService) Save(ctx context.Context, userID uuid.UUID, serviceNameIndex []byte, encryptedData []byte) error{	
 
-	credentials, err := domain.NewCredentials(userID, serviceName, encryptedData)
+	credentials, err := domain.NewCredentials(userID, serviceNameIndex, encryptedData)
 	if err != nil { return err }
 
 	return s.repo.Save(ctx, credentials)
 }
 
-func (s *VaultService) GetForService(ctx context.Context, serviceName string, userID uuid.UUID) (*domain.Credentials, error) {	
-	credentials,err := s.repo.GetByServiceAndUser(ctx, serviceName, userID)
+func (s *VaultService) GetForService(ctx context.Context, serviceNameIndex []byte, userID uuid.UUID) (*domain.Credentials, error) {	
+	credentials,err := s.repo.GetByServiceAndUser(ctx, serviceNameIndex, userID)
 	if err != nil {
 		if errors.Is(err, domain.ErrNotFound) {
 			return nil, domain.ErrCredentialsNotFound

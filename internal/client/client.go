@@ -10,20 +10,18 @@ import (
 	"net/url"
 	"strings"
 	"time"
-
-	"github.com/LeonardoBellan/bassword/internal/shared/crypto"
 )
 
 type Client struct {
 	BaseURL    *url.URL
-	Token      string
 	HTTPClient *http.Client
+	Token      string
+	cryptoEngine *CryptoEngine
 }
 
-func NewClient(baseURL *url.URL, token string) *Client {
+func NewClient(baseURL *url.URL) *Client {
 	return &Client{
 		BaseURL: baseURL,
-		Token: token,
 		HTTPClient: &http.Client{
 			Timeout: 10*time.Second,
 		},
@@ -38,17 +36,24 @@ func (c *Client) doRequest(req *http.Request) (*http.Response, error) {
     return c.HTTPClient.Do(req)
 }
 
+
 type authRequest struct {
-	Email   string 	`json:"email"`
+	Email   string  `json:"email"`
 	AuthHash []byte `json:"auth_hash"`
 }
 
-func (c *Client) Login(email string, authHash []byte) error {
+func (c *Client) Login(masterPassword []byte, email string) error {
+	// TODO - Salt fetch/Generation
 	
+	// Initialize crypto engine
+	crypto, err := NewCryptoEngine(masterPassword, []byte(email))
+	if err != nil { return err }
+	c.cryptoEngine = crypto
+
 	// Setup
 	reqBody, err := json.Marshal(authRequest{
 		Email: email,
-		AuthHash: authHash,
+		AuthHash: c.cryptoEngine.AuthKey(),
 	})
 	if err != nil { return err }
 
@@ -71,10 +76,10 @@ func (c *Client) Login(email string, authHash []byte) error {
 	}
 
 	type LoginResponse struct {
-        Status	string 		`json:"status"`
+        Status	string `json:"status"`
         Data	struct {
-            Token string 	`json:"token"`
-        } 					`json:"data"`
+            Token string `json:"token"`
+        } `json:"data"`
     }
 
 	var result LoginResponse
@@ -87,11 +92,19 @@ func (c *Client) Login(email string, authHash []byte) error {
 	return nil
 }
 
-func (c *Client) Register(email string, authHash []byte) error {
+func (c *Client) Register(masterPassword [] byte, email string) error {
+	
+	// TODO - Salt fetch/Generation
+
+		// Initialize crypto engine
+	crypto, err := NewCryptoEngine(masterPassword, []byte(email))
+	if err != nil { return err }
+	c.cryptoEngine = crypto
+
 	// Setup
 	reqBody, err := json.Marshal(authRequest{
 		Email: email,
-		AuthHash: authHash,
+		AuthHash: c.cryptoEngine.AuthKey(),
 	})
 	if err != nil { return err }
 	
@@ -114,21 +127,23 @@ func (c *Client) Register(email string, authHash []byte) error {
 	return nil
 }
 
-func (c *Client) AddPassword(encryptionKey []byte, serviceName string, cred *Credentials) error {
+func (c *Client) AddPassword(serviceName string, cred *Credentials) error {
+
+	// TODO - ServiceNameIndex e EncryptedService
 
 	// Parse JSON
 	dataJSON, err := json.Marshal(cred)
 	if err != nil { return err }
-	defer crypto.Wipe(dataJSON)
+	defer Wipe(dataJSON)
 
 	// Encrypt
-	ciphertext, err := crypto.Encrypt(dataJSON, encryptionKey)
+	ciphertext, err := c.cryptoEngine.Encrypt(dataJSON)
 	if err != nil { return err }
 
 	// Encode Base64URL
 	reqBody, err := json.Marshal(credentialsPayload{
-		ServiceName: serviceName,
-		EncryptedData: base64.URLEncoding.EncodeToString(ciphertext),
+		ServiceNameIndex: serviceName,
+		EncryptedData: ciphertext,
 	})
 
 	// Request
@@ -148,11 +163,12 @@ func (c *Client) AddPassword(encryptionKey []byte, serviceName string, cred *Cre
 	return nil
 }
 
-func (c *Client) GetPassword(encryptionKey []byte, serviceName string) (*Credentials, error) {
+func (c *Client) FetchCredentials(serviceName string) (*Credentials, error) {
+	// TODO - ServiceNameIndex e EncryptedService
 
 	// Request
-	safeServiceName := url.PathEscape(serviceName)
-	path := fmt.Sprintf("/api/v1/credentials/%s", safeServiceName)
+	encodedService := base64.RawURLEncoding.EncodeToString(serviceNameIndex)
+	path := fmt.Sprintf("/api/v1/credentials/%s", encodedService)
 	endpoint := c.BaseURL.ResolveReference(&url.URL{Path: path})
 	req, err := http.NewRequest("GET", endpoint.String(), nil)
 	if err != nil { return nil, err }
@@ -170,15 +186,11 @@ func (c *Client) GetPassword(encryptionKey []byte, serviceName string) (*Credent
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
 		return nil, fmt.Errorf("Error decoding response: %v", err)
 	}
-	
-	// Decode base64URL
-	ciphertext, err := base64.URLEncoding.DecodeString(result.EncryptedData)
-	if err != nil { return nil, err }
 
 	// Decrypt ciphertext
-	dataJSON, err := crypto.Decrypt(ciphertext, encryptionKey)
+	dataJSON, err := c.cryptoEngine.Decrypt(result.EncryptedData)
 	if err != nil { return nil, err}
-	defer crypto.Wipe(dataJSON)
+	defer Wipe(dataJSON)
 
 	// Parse credentials
 	var credentials Credentials

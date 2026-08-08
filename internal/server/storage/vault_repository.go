@@ -19,7 +19,7 @@ func NewSQLiteVaultRepository(conn *sql.DB) *SQLiteVaultRepository {
 // Adds a new password to the DB; if it already exists for a service, it updates it with the new values.
 // Populates the given credential with ID and createdAt fields
 func (r *SQLiteVaultRepository) Save(ctx context.Context, credentials *domain.Credentials) error {
-	err := r.conn.QueryRowContext(ctx, upsertCredentialsQuery, credentials.ID, credentials.UserID, credentials.ServiceName, credentials.EncryptedData).Scan(&credentials.CreatedAt)
+	err := r.conn.QueryRowContext(ctx, upsertCredentialsQuery, credentials.ID, credentials.UserID, credentials.ServiceNameIndex, credentials.EncryptedData).Scan(&credentials.CreatedAt)
 	return err
 }
 
@@ -31,7 +31,7 @@ func (r *SQLiteVaultRepository) GetByIdAndUser(ctx context.Context, id uuid.UUID
 	if err := r.conn.QueryRowContext(ctx, selectCredentialsByIdAndUserQuery, id, userID).Scan(
 		&credentials.ID,
 		&credentials.UserID,
-		&credentials.ServiceName,
+		&credentials.ServiceNameIndex,
 		&credentials.EncryptedData,
 		&credentials.CreatedAt,
 	); err != nil {
@@ -45,13 +45,13 @@ func (r *SQLiteVaultRepository) GetByIdAndUser(ctx context.Context, id uuid.UUID
 }
 
 // Returns the credential entry of the service of a user
-func (r *SQLiteVaultRepository) GetByServiceAndUser(ctx context.Context, serviceName string, userID uuid.UUID) (*domain.Credentials, error) {
+func (r *SQLiteVaultRepository) GetByServiceAndUser(ctx context.Context, serviceNameIndex []byte, userID uuid.UUID) (*domain.Credentials, error) {
 	// Get entry of a service
 	var credentials domain.Credentials
-	if err := r.conn.QueryRowContext(ctx, selectCredentialsByServiceAndUserQuery, serviceName, userID.String()).Scan(
+	if err := r.conn.QueryRowContext(ctx, selectCredentialsByServiceAndUserQuery, serviceNameIndex, userID.String()).Scan(
 		&credentials.ID,
 		&credentials.UserID,
-		&credentials.ServiceName,
+		&credentials.ServiceNameIndex,
 		&credentials.EncryptedData,
 		&credentials.CreatedAt,
 	); err != nil {

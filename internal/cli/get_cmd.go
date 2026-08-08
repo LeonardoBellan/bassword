@@ -26,7 +26,7 @@ func NewGetCmd(state *AppState) *cobra.Command {
 			//Get inputs
 			serviceName := args[0]
 
-			credentials, err := state.Client.GetPassword(state.EncryptionKey, serviceName)
+			credentials, err := state.Client.FetchPassword(serviceName)
 			defer crypto.Wipe(credentials.Password) //Clean password from memory
 			if err != nil { return err }
 

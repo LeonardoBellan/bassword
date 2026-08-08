@@ -60,7 +60,7 @@ func NewAddCmd(state *AppState) *cobra.Command {
 
 			credentials, err := client.NewCredentials(username, plaintext)
 			if err != nil { return err }
-			state.Client.AddPassword(state.EncryptionKey, serviceName, credentials)
+			state.Client.AddPassword(serviceName, credentials)
 
 			//Copy password in clipboard
 			fmt.Println("Credentials successfully created!")

@@ -8,24 +8,21 @@ import (
 	"github.com/LeonardoBellan/bassword/internal/shared/crypto"
 )
 
-func RequireMasterPassword(state *AppState) error {
+func PrepareRegistration(state *AppState) error {
 
 	// Prompt master password
 	masterPassword, err := securePrompt("Insert master password: ")
-	if err != nil {
-		return err
-	}
+	if err != nil { return err }
 
-	// Save keys in app state
-	state.EncryptionKey, state.AuthHash = crypto.DeriveKeys(masterPassword, []byte(state.Email))
-
+	state.Client.PrepareRegistration(masterPassword, []byte(state.Email))
+	
 	return nil
 }
 
 func RequireLogin(state *AppState) error {
 
 	// Already logged
-	if state.Client.Token != "" {
+	if state.Client.IsLogged() {
 		return nil
 	}
 
@@ -33,13 +30,14 @@ func RequireLogin(state *AppState) error {
 		return client.ErrNotRegistered
 	}
 
-	// Ask master password if it was not asked before
-	if state.AuthHash == nil {
-		RequireMasterPassword(state)
+	// Prompt master password
+	masterPassword, err := securePrompt("Insert master password: ")
+	if err != nil {
+		return err
 	}
 
 	// Login
-	if err := state.Client.Login(state.Email, state.AuthHash); err != nil {        
+	if err := state.Client.Login(masterPassword, state.Email); err != nil {        
 		if errors.Is(err, client.ErrUnauthorized) {
 			return fmt.Errorf("Invalid credentials. Please try again.")
 		}

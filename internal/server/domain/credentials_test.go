@@ -2,6 +2,7 @@ package domain
 
 import (
 	"testing"
+	"bytes"
 
 	"github.com/google/uuid"
 )
@@ -9,40 +10,40 @@ import (
 func TestNewCredentials(t *testing.T) {
 
 	userID := uuid.New()
-	serviceName := "example-service"
+	serviceNameIndex := []byte("example-service")
 	encryptedData := []byte("encrypted-bytes")
 
 	tests := []struct {
 		name          string
 		userID        uuid.UUID
-		serviceName   string
+		serviceNameIndex []byte
 		encryptedData []byte
 		expectedErr   error
 	}{
 		{
 			name:          "Success_Valid_Credentials",
 			userID:        userID,
-			serviceName:   serviceName,
+			serviceNameIndex:   serviceNameIndex,
 			encryptedData: encryptedData,
 			expectedErr:   nil,
 		},
 		{
-			name:          "Failure_Empty_Service_Name",
+			name:          "Failure_Empty_Service_Name_Index",
 			userID:        userID,
-			serviceName:   "",
+			serviceNameIndex:   nil,
 			encryptedData: encryptedData,
-			expectedErr:   ErrEmptyServiceName,
+			expectedErr:   ErrEmptyServiceNameIndex,
 		},
 		{
 			name:          "Failure_Empty_Encrypted_Data",
 			userID:        userID,
-			serviceName:   serviceName,
+			serviceNameIndex: serviceNameIndex,
 			encryptedData: nil,
 			expectedErr:   ErrEmptyEncryptedData,
 		},{
 			name:          "Failure_UserID_Nil",
 			userID:        uuid.Nil,
-			serviceName:   serviceName,
+			serviceNameIndex:   serviceNameIndex,
 			encryptedData: encryptedData,
 			expectedErr:   ErrInvalidUserID,
 		},
@@ -50,7 +51,7 @@ func TestNewCredentials(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			creds, err := NewCredentials(tt.userID, tt.serviceName, tt.encryptedData)
+			creds, err := NewCredentials(tt.userID, tt.serviceNameIndex, tt.encryptedData)
 
 			if err != tt.expectedErr {
 				t.Errorf("expected error %v, got %v", tt.expectedErr, err)
@@ -66,8 +67,11 @@ func TestNewCredentials(t *testing.T) {
 				if creds.UserID != tt.userID {
 					t.Errorf("expected userID %s, got %s", tt.userID, creds.UserID)
 				}
-				if creds.ServiceName != tt.serviceName {
-					t.Errorf("expected serviceName %s, got %s", tt.serviceName, creds.ServiceName)
+				if !bytes.Equal(creds.ServiceNameIndex, tt.serviceNameIndex) {
+					t.Errorf("ServiceNameIndex mismatch")
+				}
+				if !bytes.Equal(creds.EncryptedData, tt.encryptedData) {
+					t.Errorf("ServiceNameIndex mismatch")
 				}
 			}
 		})

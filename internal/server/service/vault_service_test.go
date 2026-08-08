@@ -49,13 +49,13 @@ func (f *FakeVaultRepository) GetByIdAndUser(ctx context.Context, id uuid.UUID, 
 	return cred, nil
 }
 
-func (f *FakeVaultRepository) GetByServiceAndUser(ctx context.Context, serviceName string, userID uuid.UUID) (*domain.Credentials, error) {
+func (f *FakeVaultRepository) GetByServiceAndUser(ctx context.Context, serviceNameIndex []byte, userID uuid.UUID) (*domain.Credentials, error) {
 	if f.SimulateError {
 		return nil, errSimulatedIO
 	}
 
 	for _, cred := range f.vault {
-		if cred.UserID == userID && cred.ServiceName == serviceName {
+		if cred.UserID == userID && bytes.Equal(cred.ServiceNameIndex, serviceNameIndex) {
 			return cred, nil
 		}
 	}
@@ -65,13 +65,13 @@ func (f *FakeVaultRepository) GetByServiceAndUser(ctx context.Context, serviceNa
 
 func TestVaultService_Save (t *testing.T) {
 	userID := uuid.New()
-	serviceName := "service_example"
+	serviceNameIndex := []byte("service_example")
 	encryptedData := []byte("encrypted_secret")
 
 	tests := []struct {
 		name              string
 		userID            uuid.UUID
-		serviceName       string
+		serviceNameIndex  []byte
 		encryptedData     []byte
 		simulateRepoError bool
 		expectedError     error
@@ -79,21 +79,21 @@ func TestVaultService_Save (t *testing.T) {
 		{
 			name: "Success_Save",
 			userID: userID,
-			serviceName: serviceName,
+			serviceNameIndex: serviceNameIndex,
 			encryptedData: encryptedData,
 			simulateRepoError: false,
 			expectedError: nil,
 		},{
 			name: "Failure_Domain_Error_Propagation",
 			userID: uuid.Nil,
-			serviceName: serviceName,
+			serviceNameIndex: serviceNameIndex,
 			encryptedData: encryptedData,
 			simulateRepoError: false,
 			expectedError: domain.ErrInvalidUserID,
 		},{
 			name: "Failure_Repository_Error_Propagation",
 			userID: userID,
-			serviceName: serviceName,
+			serviceNameIndex: serviceNameIndex,
 			encryptedData: encryptedData,
 			simulateRepoError: true,
 			expectedError: errSimulatedIO,
@@ -106,7 +106,7 @@ func TestVaultService_Save (t *testing.T) {
 			fakeRepo := NewFakeVaultRepository(tt.simulateRepoError)
 
 			vaultService := service.NewVaultService(fakeRepo)
-			err := vaultService.Save(ctx, tt.userID, tt.serviceName, tt.encryptedData)
+			err := vaultService.Save(ctx, tt.userID, tt.serviceNameIndex, tt.encryptedData)
 
 			if !errors.Is(err, tt.expectedError) {
 				t.Errorf("Expected error '%v', got '%v'", tt.expectedError, err)
@@ -117,13 +117,13 @@ func TestVaultService_Save (t *testing.T) {
 
 func TestVaultService_GetForService(t *testing.T) {
 	userID := uuid.New()
-	serviceName := "service_example"
+	serviceNameIndex := []byte("service_example")
 	encryptedData := []byte("encrypted_secret")
 
 	tests := []struct {
 		name				string
 		userID				uuid.UUID
-		serviceName			string
+		serviceNameIndex			[]byte
 		setupRepo			func(repo *FakeVaultRepository)
 		simulateRepoError 	bool
 		expectedError     	error
@@ -131,10 +131,10 @@ func TestVaultService_GetForService(t *testing.T) {
 		{
 			name: "Success_Get",
 			userID: userID,
-			serviceName: serviceName,
+			serviceNameIndex: serviceNameIndex,
 			setupRepo: func(repo *FakeVaultRepository) {
 				
-				cred,_ := domain.NewCredentials(userID, serviceName, encryptedData)
+				cred,_ := domain.NewCredentials(userID, serviceNameIndex, encryptedData)
 				_ = repo.Save(context.Background(), cred)
 			},
 			simulateRepoError: false,
@@ -142,14 +142,14 @@ func TestVaultService_GetForService(t *testing.T) {
 		},{
 			name: "Failure_Credentials_Not_Found",
 			userID: userID,
-			serviceName: serviceName,
+			serviceNameIndex: serviceNameIndex,
 			setupRepo: func(repo *FakeVaultRepository) {},
 			simulateRepoError: false,
 			expectedError: domain.ErrCredentialsNotFound,
 		},{
 			name: "Failure_Repository_Error_Propagation",
 			userID: userID,
-			serviceName: serviceName,
+			serviceNameIndex: serviceNameIndex,
 			setupRepo: func(repo *FakeVaultRepository) {},
 			simulateRepoError: true,
 			expectedError: errSimulatedIO,
@@ -167,7 +167,7 @@ func TestVaultService_GetForService(t *testing.T) {
 
 			vaultService := service.NewVaultService(fakeRepo)
 
-			creds, err := vaultService.GetForService(ctx, tt.serviceName, tt.userID)
+			creds, err := vaultService.GetForService(ctx, tt.serviceNameIndex, tt.userID)
 			if !errors.Is(err, tt.expectedError) {
 				t.Errorf("Expected error %v, got %v", tt.expectedError, err)
 			}
@@ -180,8 +180,8 @@ func TestVaultService_GetForService(t *testing.T) {
 					if creds.UserID != tt.userID {
 						t.Errorf("Expected UserID %s, got %s", tt.userID, creds.UserID)
 					}
-					if creds.ServiceName != tt.serviceName{
-						t.Errorf("Expected service %s, got %s", tt.serviceName, creds.UserID)
+					if !bytes.Equal(creds.ServiceNameIndex, tt.serviceNameIndex) {
+						t.Errorf("ServiceNameIndex mismatch")
 					}
 					if !bytes.Equal(creds.EncryptedData, encryptedData){
 						t.Errorf("Encrypted data mismatch")

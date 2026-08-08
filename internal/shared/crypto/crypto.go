@@ -1,15 +1,11 @@
 package crypto
 
 import (
-	"crypto/aes"
-	"crypto/cipher"
 	"crypto/rand"
 	"crypto/subtle"
 	"encoding/base64"
 	"errors"
 	"fmt"
-	"io"
-	"runtime"
 	"strings"
 
 	"golang.org/x/crypto/argon2"
@@ -24,17 +20,6 @@ type Argon2Configuration struct {
     KeyLength  uint32
 }
 
-// Wipe zeroes the elements of the provided slice
-func Wipe(slice []byte) {
-    if slice == nil {
-        return
-    }
-    for i := range slice {
-        slice[i] = 0
-    }
-    runtime.KeepAlive(slice)
-}
-
 // GenerateSalt generates a random cryptographically secure salt of the provided size
 // Returns the generated salt
 func GenerateSalt(size int) ([]byte, error) {
@@ -44,17 +29,6 @@ func GenerateSalt(size int) ([]byte, error) {
 	}
 
 	return salt, nil
-}
-
-// DeriveKey derives a 64-bit key from the master password using argon2id used for key separation
-// Returns the encryptionKey and the authHash
-func DeriveKeys(secret, salt []byte) ([]byte, []byte) {
-	keyMaterial :=  argon2.IDKey(secret, salt, 1, 64*1024, 4, 64)
-
-	encryptionKey := keyMaterial[:32]
-	authHash := keyMaterial[32:]
-
-	return encryptionKey, authHash
 }
 
 // HashSecure receives an authHash and hashes it using argon2id
@@ -158,50 +132,4 @@ func VerifySecretSecure(providedSecret []byte, storedHash string) error {
 	}
 
 	return nil
-}
-
-// Encrypt a plaintext in AES-GCM using a derived key from the master password
-// Returns the encrypted ciphertext
-func Encrypt(plaintext []byte, masterKey []byte) ([]byte,error) {
-
-	// Initialize cipher
-	block, err := aes.NewCipher(masterKey)
-	if err != nil { return nil,err }
-
-	aesgcm, err := cipher.NewGCM(block)
-	if err != nil { return nil,err }
-
-	// Generate nonce
-	nonce := make([]byte, aesgcm.NonceSize())
-	if _, err := io.ReadFull(rand.Reader, nonce); err != nil {
-		return nil,err
-	}
-
-	// Final package: nonce + ciphertext
-	data := aesgcm.Seal(nonce, nonce, plaintext, nil)
-	return data, nil
-}
-
-// Decrypt a ciphertext using an AES-GCM using a derived key from the master password
-// Returns the decrypted plaintext
-func Decrypt(data []byte, masterKey []byte) ([]byte, error){
-
-	// Initialize cipher
-	block, err := aes.NewCipher(masterKey)
-	if err != nil { return nil,err }
-	aesgcm, err := cipher.NewGCM(block)
-	if err != nil { return nil,err }
-
-	// Extract nonce from package data
-	nonceSize := aesgcm.NonceSize()
-	if len(data)<nonceSize {
-		return nil, errors.New("Invalid ciphertext: too short")
-	}
-	nonce := data[:nonceSize]
-	ciphertext := data[nonceSize:]
-
-	plaintext,err := aesgcm.Open(nil,nonce,ciphertext,nil)
-	if err != nil { return nil,err }
-
-	return plaintext,nil
 }

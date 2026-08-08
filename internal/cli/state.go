@@ -9,7 +9,5 @@ import (
 type AppState struct {
 	Client           *client.Client
 	Email			 string
-	EncryptionKey    []byte
-	AuthHash         []byte
 	ClipboardTimeout time.Duration
 }

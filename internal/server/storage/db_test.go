@@ -64,7 +64,7 @@ func TestInitializeDB(t *testing.T) {
      	   t.Errorf("Could not insert into 'users' after initialization: %v", err)
     	}
 
-    	_, err = conn.Exec("INSERT INTO vault (service_name, encrypted_data, user_id) VALUES ('service','encrypted-secret',1)")
+    	_, err = conn.Exec("INSERT INTO vault (service_name_index, encrypted_data, user_id) VALUES ('service','encrypted-secret',1)")
     	if err != nil {
      	   t.Errorf("Could not insert into 'vault' after initialization: %v", err)
     	}

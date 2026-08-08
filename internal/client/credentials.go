@@ -21,7 +21,8 @@ func NewCredentials(username string, password []byte) (*Credentials, error) {
 	}, nil
 }
 
+// API DTO
 type credentialsPayload struct {
-	ServiceName   string `json:"service_name"`
-	EncryptedData string `json:"encrypted_data"`
+	ServiceNameIndex   []byte `json:"service_name_index"`
+	EncryptedData []byte `json:"encrypted_data"`
 }

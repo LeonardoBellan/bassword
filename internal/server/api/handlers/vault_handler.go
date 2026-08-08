@@ -2,8 +2,8 @@ package handlers
 
 import (
 	"context"
-	"encoding/base64"
 	"encoding/json"
+	"encoding/base64"
 	"errors"
 	"log"
 	"net/http"
@@ -15,14 +15,14 @@ import (
 
 // DTO
 type credentialsPayload struct {
-	ServiceName   string `json:"service_name"`
-    EncryptedData string `json:"encrypted_data"`
+	ServiceNameIndex   []byte `json:"service_name_index"`
+  EncryptedData []byte `json:"encrypted_data"`
 }
 
 // Dependencies
 type VaultService interface {
-	Save(ctx context.Context, userID uuid.UUID, serviceName string, encryptedData []byte) error
-	GetForService(ctx context.Context, serviceName string, userID uuid.UUID) (*domain.Credentials, error)
+	Save(ctx context.Context, userID uuid.UUID, serviceNameIndex []byte, encryptedData []byte) error
+	GetForService(ctx context.Context, serviceNameIndex []byte, userID uuid.UUID) (*domain.Credentials, error)
 }
 
 type VaultHandler struct {
@@ -53,23 +53,17 @@ func (h *VaultHandler) HandleCreate(w http.ResponseWriter, r *http.Request) {
 		return 
 	}
 
-	ciphertext, err := base64.URLEncoding.DecodeString(req.EncryptedData)
-	if err != nil {
-    	RespondWithError(w, http.StatusBadRequest, "Invalid Base64 encoding in encrypted_data")
-    	return
-	}
-
 	// Validazione input
-	if req.ServiceName == "" {
+	if len(req.ServiceNameIndex) == 0 {
 		RespondWithError(w, http.StatusBadRequest, "Field 'service_name' is required")
 		return
 	}
-	if len(ciphertext) == 0 {
+	if len(req.EncryptedData) == 0 {
 		RespondWithError(w, http.StatusBadRequest, "Field 'encrypted_data' is required")
 		return
 	}
 
-	if err := h.service.Save(ctx, userID, req.ServiceName, ciphertext); err != nil {
+	if err := h.service.Save(ctx, userID, req.ServiceNameIndex, req.EncryptedData); err != nil {
 		// TODO - Map internal errors
 		log.Printf("Unexpected error; %v", err)
 		RespondWithError(w, http.StatusInternalServerError, "Unexpected error")
@@ -86,8 +80,13 @@ func (h *VaultHandler) HandleCreate(w http.ResponseWriter, r *http.Request) {
 func (h *VaultHandler) HandleGetByService(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	// Retrieve serviceName from request
-	serviceName := chi.URLParam(r, "service")
+	// Retrieve and decode serviceNameIndex from request
+	serviceParam := chi.URLParam(r, "service")
+	serviceNameIndex, err := base64.RawURLEncoding.DecodeString(serviceParam)
+	if err != nil {
+		RespondWithError(w, http.StatusBadRequest, "Invalid Service parameter")
+		return
+	}
 
 	// Retrieve user ID from context
 	envVal := r.Context().Value("user_id")
@@ -96,12 +95,12 @@ func (h *VaultHandler) HandleGetByService(w http.ResponseWriter, r *http.Request
 		RespondWithError(w, http.StatusUnauthorized, "Unauthorized")
 	}
 
-	if serviceName == "" {
+	if len(serviceNameIndex) == 0 {
 		RespondWithError(w, http.StatusBadRequest, "Field 'service_name' is required")
 		return
 	}
 
-	credentials,err := h.service.GetForService(ctx, serviceName, userID);
+	credentials,err := h.service.GetForService(ctx, serviceNameIndex, userID);
 	if err != nil {
 
 		if errors.Is(err, domain.ErrCredentialsNotFound) {
@@ -116,8 +115,8 @@ func (h *VaultHandler) HandleGetByService(w http.ResponseWriter, r *http.Request
 
 	// Response
 	res := credentialsPayload {
-		ServiceName: credentials.ServiceName,
-		EncryptedData: base64.URLEncoding.EncodeToString(credentials.EncryptedData),
+		ServiceNameIndex: credentials.ServiceNameIndex,
+		EncryptedData: credentials.EncryptedData,
 	}
 	RespondWithJSON(w, http.StatusOK, res)
 }

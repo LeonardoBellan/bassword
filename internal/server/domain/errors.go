@@ -9,7 +9,7 @@ var (
 	ErrMissingSecretHash = errors.New("missing secret hash")
 	ErrInvalidPHCFormat = errors.New("invalid PHC format")
 
-	ErrEmptyServiceName = errors.New("service name cannot be empty")
+	ErrEmptyServiceNameIndex = errors.New("service name cannot be empty")
 	ErrEmptyEncryptedData = errors.New("encrypted data cannot be empty")
 	ErrInvalidUserID = errors.New("Invalid userID format")
 	
