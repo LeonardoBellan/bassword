@@ -8,31 +8,38 @@ import (
 )
 
 func NewRegisterCmd(state *AppState) *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "register <email>",
-		Short: "Registers a new user",
-		Long: "",
-		Args: cobra.ExactArgs(1),
-		RunE: func(cmd *cobra.Command, args []string) error {
+    cmd := &cobra.Command{
+        Use:   "register <email>",
+        Short: "Registers a new user",
+        Long:  "",
+        Args:  cobra.ExactArgs(1),
+        RunE: func(cmd *cobra.Command, args []string) error {
 
-			state.Email = args[0]
+            email := args[0]
 
-			// TODO - Email validation
+            // TODO - Email validation
 
-			// Prompt master password
-			masterPassword, err := securePrompt("Insert master password: ")
-			if err != nil { return err }
+            state.Client.Email = email
 
-			err := state.Client.Register(masterPassword, state.Email)
-			if err != nil { return err }
+            // Prompt master password
+            masterPassword, err := securePrompt("Insert master password: ")
+            if err != nil { 
+                return err 
+            }
 
-			viper.Set("email", state.Email)
-			SaveConfig()
+            err = state.Client.Register(masterPassword)
+            if err != nil { 
+                return err 
+            }
 
-			fmt.Println("User registered successfully")
-			return nil
-		},
-	}
+            // Save email in config
+            viper.Set("email", email)
+            SaveConfig()
 
-	return cmd
+            fmt.Println("User registered successfully")
+            return nil
+        },
+    }
+
+    return cmd
 }

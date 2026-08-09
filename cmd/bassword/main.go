@@ -36,7 +36,7 @@ func main() {
 
 			// Initialize appstate
 			appState.Email = email
-			appState.Client = client.NewClient(apiURL)
+			appState.Client = client.NewClient(apiURL, email)
 			appState.ClipboardTimeout = clipboardTimeout
 		},
 	}

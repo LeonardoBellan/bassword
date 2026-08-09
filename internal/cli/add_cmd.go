@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/LeonardoBellan/bassword/internal/client"
-	"github.com/LeonardoBellan/bassword/internal/shared/crypto"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -55,7 +54,7 @@ func NewAddCmd(state *AppState) *cobra.Command {
 			} else{
 				plaintext, err = getPlaintextPassword(serviceName)
 			}
-			defer crypto.Wipe(plaintext) //Clean password from memory
+			defer clear(plaintext)
 			if err != nil { return err }
 
 			credentials, err := client.NewCredentials(username, plaintext)

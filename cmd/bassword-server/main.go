@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -94,6 +95,7 @@ func main() {
 	
 	// DB and repository setup
 	dbPath := getDBPath()
+	fmt.Println(dbPath)
 	conn, err := setupDB(ctx, dbPath)
 	if err != nil {
 		log.Fatalf("Database setup failed: %v", err)

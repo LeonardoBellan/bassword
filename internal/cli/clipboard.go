@@ -6,7 +6,6 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/LeonardoBellan/bassword/internal/shared/crypto"
 	"golang.design/x/clipboard"
 )
 
@@ -35,7 +34,7 @@ func copyToClipboardWithTimeout(text []byte, duration time.Duration) (<-chan str
 func startClipboardClearWorker(text []byte, duration time.Duration) {
 	copyData := make([]byte, len(text))
 	copy(copyData, text)
-	defer crypto.Wipe(copyData)
+	defer clear(copyData)
 
 	if runtime.GOOS == "windows" {
 		command := fmt.Sprintf("Start-Sleep -Seconds %d; Set-Clipboard -Value ''", int(duration.Seconds()))
@@ -45,7 +44,7 @@ func startClipboardClearWorker(text []byte, duration time.Duration) {
 	}
 
 	go func() {
-		defer crypto.Wipe(copyData)
+		defer clear(copyData)
 		time.Sleep(duration)
 		if err := clipboard.Init(); err != nil {
 			return

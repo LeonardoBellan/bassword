@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/LeonardoBellan/bassword/internal/shared/crypto"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -26,9 +25,9 @@ func NewGetCmd(state *AppState) *cobra.Command {
 			//Get inputs
 			serviceName := args[0]
 
-			credentials, err := state.Client.FetchPassword(serviceName)
-			defer crypto.Wipe(credentials.Password) //Clean password from memory
+			credentials, err := state.Client.FetchCredentials(serviceName)
 			if err != nil { return err }
+			defer clear(credentials.Password) //Clean password from memory
 
 			// Pass credentials to user
 			fmt.Println("Username:", credentials.Username)

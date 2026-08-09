@@ -4,5 +4,5 @@ import "errors"
 
 var (
 	ErrUnauthorized = errors.New("authentication failed")
-	ErrNotRegistered = errors.New("missing email")
+	ErrMissingEmail = errors.New("missing email")
 )

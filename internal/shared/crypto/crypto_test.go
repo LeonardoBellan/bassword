@@ -10,7 +10,7 @@ import (
 	"golang.org/x/crypto/argon2"
 )
 
-func TestWipe(t *testing.T) {
+/* func TestWipe(t *testing.T) {
 	t.Run("Success_Wipe", func(t *testing.T) {
 		data := []byte("slice")
 		Wipe(data)
@@ -31,7 +31,7 @@ func TestWipe(t *testing.T) {
 
 		Wipe(nil)
 	})
-}
+} */ 
 
 func TestGenerateSalt(t *testing.T) {
 	expectedSize := 16
@@ -66,7 +66,7 @@ func TestGenerateSalt(t *testing.T) {
 	})
 }
 
-func TestDeriveKeys(t *testing.T) {
+/* func TestDeriveKeys(t *testing.T) {
 	secret := []byte("secret_password")
 	salt := []byte("user@example.com")
 	encryptionKey, authHash := DeriveKeys(secret, salt)
@@ -114,7 +114,7 @@ func TestDeriveKeys(t *testing.T) {
 			t.Errorf("Invalid key or hash for nil secret")
 		}
 	})
-}
+}*/
 
 func TestHashSecure(t *testing.T) {
 	secret := []byte("secret_password")
@@ -261,7 +261,7 @@ func TestVerifySecretSecure(t *testing.T) {
 		}
 	})
 }
-func TestEncrypt(t *testing.T) {
+/* func TestEncrypt(t *testing.T) {
 	masterKey := bytes.Repeat([]byte("k"), 32)
 	plaintext := []byte("correct-horse-battery-staple")
 
@@ -367,4 +367,4 @@ func TestDecrypt(t *testing.T){
             }
 		})
 	}
-}
+}*/

@@ -4,26 +4,14 @@ import (
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/hkdf"
+	"crypto/hmac"
 	"crypto/rand"
 	"crypto/sha256"
 	"errors"
 	"io"
-	"runtime"
 
 	"golang.org/x/crypto/argon2"
 )
-
-// Wipe zeroes the elements of the provided slice
-func Wipe(slice []byte) {
-    if slice == nil {
-        return
-    }
-    for i := range slice {
-        slice[i] = 0
-    }
-    runtime.KeepAlive(slice)
-}
-
 
 type CryptoEngine struct {
 	encryptionKey	[]byte	// Data encryption (AES-GCM)
@@ -44,17 +32,16 @@ func NewCryptoEngine(masterPassword, salt []byte) (*CryptoEngine, error) {
 	keyLen := uint32(64)
 
 	masterKey :=  argon2.IDKey(masterPassword, salt, time, memory, threads, keyLen)
-	defer Wipe(masterPassword)
-	defer Wipe(masterKey)
+	defer clear(masterKey)
 
 	// Key Expansion
 	hashFunc := sha256.New
 	keyLength := hashFunc().Size()
-	hEnc,err := hkdf.Key(hashFunc, masterKey, salt, "", keyLength)
+	hEnc,err := hkdf.Key(hashFunc, masterKey, salt, "encryption", keyLength)
 	if err != nil { return nil, err }
-	hAuth, err := hkdf.Key(hashFunc, masterKey, salt, "", keyLength)
+	hAuth, err := hkdf.Key(hashFunc, masterKey, salt, "authentication", keyLength)
 	if err != nil { return nil, err }
-	hBlindIndex, err := hkdf.Key(hashFunc, masterKey, salt, "", keyLength)
+	hBlindIndex, err := hkdf.Key(hashFunc, masterKey, salt, "blind_index", keyLength)
 	if err != nil { return nil, err }
 
 	// CryptoEngine setup
@@ -115,4 +102,11 @@ func (ce *CryptoEngine) Decrypt(data []byte) ([]byte, error){
 
 func (ce *CryptoEngine) AuthKey() []byte {
 	return ce.authKey
+}
+
+func (ce *CryptoEngine) ComputeBlindIndex(data []byte) []byte {
+	mac := hmac.New(sha256.New, ce.blindIndexKey)
+	mac.Write(data)
+
+	return mac.Sum(nil)
 }
