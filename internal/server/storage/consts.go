@@ -13,10 +13,11 @@ const (
 		CREATE TABLE IF NOT EXISTS vault (
 			id TEXT PRIMARY KEY, 
 			user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-			service_name_index BLOB NOT NULL,
-			encrypted_data BLOB NOT NULL,
+			service_index BLOB NOT NULL,
+			service_encrypted BLOB NOT NULL,
+			data_encrypted BLOB NOT NULL,
 			created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-			UNIQUE(user_id, service_name_index)
+			UNIQUE(user_id, service_index)
 		);`
 
 	// Users
@@ -35,10 +36,11 @@ const (
 
 	// Credentials
 	upsertCredentialsQuery = `
-    INSERT INTO vault (id, user_id, service_name_index, encrypted_data)
-    VALUES (?,?,?,?)
-    ON CONFLICT(user_id, service_name_index) DO UPDATE SET
-			encrypted_data = excluded.encrypted_data,
+    INSERT INTO vault (id, user_id, service_index, service_encrypted, data_encrypted)
+    VALUES (?,?,?,?,?)
+    ON CONFLICT(user_id, service_index) DO UPDATE SET
+			service_encrypted = excluded.service_encrypted,
+			data_encrypted = excluded.data_encrypted,
 			created_at = CURRENT_TIMESTAMP
     RETURNING created_at`
 
@@ -50,5 +52,5 @@ const (
 	selectCredentialsByServiceAndUserQuery = `
     SELECT *
 		FROM vault
-		WHERE service_name_index = ? AND user_id = ?;`
+		WHERE service_index = ? AND user_id = ?;`
 )

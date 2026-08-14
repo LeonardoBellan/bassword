@@ -211,7 +211,5 @@ func (c *Client) FetchCredentials(serviceName string) (*Credentials, error) {
 		return nil, err 
 	}
 
-	fmt.Println(credentials)
-
 	return &credentials, nil
 }

@@ -16,9 +16,10 @@ func createExampleCredentials(t *testing.T) (*domain.Credentials, error) {
 	t.Helper()
 
 	userID := uuid.New()
-	serviceNameIndex := []byte("service_example")
-	encryptedData := []byte("encrypted_secred")
-	return domain.NewCredentials(userID, serviceNameIndex, encryptedData)
+	serviceIndex := []byte("example_service_index")
+	serviceEncrypted := []byte("example_service_encrypted")
+	payloadEncrypted := []byte("encrypted_secred")
+	return domain.NewCredentials(userID, serviceIndex, serviceEncrypted, payloadEncrypted)
 }
 
 // SetupTestVaultRepository initializes a repository
@@ -31,7 +32,7 @@ func setupTestVaultRepository(ctx context.Context, t *testing.T) *storage.SQLite
 	return repository
 }
 
-func TestSave(t *testing.T) {
+func TestVaultRepository_Save(t *testing.T) {
 	ctx := context.Background()
 	repo := setupTestVaultRepository(ctx, t)
 
@@ -50,7 +51,7 @@ func TestSave(t *testing.T) {
 	})
 }
 
-func TestGetByIdAndUser(t *testing.T) {
+func TestVaultRepository_GetByIdAndUser(t *testing.T) {
 	ctx := context.Background()
 
 	// Setup
@@ -103,14 +104,14 @@ func TestGetByIdAndUser(t *testing.T) {
 				if retrieved.ID != newCredential.ID {
 					t.Errorf("ID mismatch: expected %s, got %s", newCredential.ID, retrieved.ID)
 				}
-				if !bytes.Equal(retrieved.ServiceNameIndex, newCredential.ServiceNameIndex) {
-					t.Errorf("ServiceNameIndex mismatch")
+				if !bytes.Equal(retrieved.ServiceIndex, newCredential.ServiceIndex) {
+					t.Errorf("ServiceIndex mismatch")
 				}
-				if !bytes.Equal(retrieved.EncryptedData, newCredential.EncryptedData) {
-					t.Errorf("EncryptedData mismatch")
+				if !bytes.Equal(retrieved.PayloadEncrypted, newCredential.PayloadEncrypted) {
+					t.Errorf("PayloadEncrypted mismatch")
 				}
-				if !bytes.Equal(retrieved.EncryptedData, newCredential.EncryptedData) {
-					t.Errorf("EncryptedData mismatch")
+				if !bytes.Equal(retrieved.PayloadEncrypted, newCredential.PayloadEncrypted) {
+					t.Errorf("PayloadEncrypted mismatch")
 				}
 				if retrieved.CreatedAt != newCredential.CreatedAt {
 					t.Errorf("CreatedAt mismatch")
@@ -120,7 +121,7 @@ func TestGetByIdAndUser(t *testing.T) {
 	}
 }
 
-func TestGetByIdAndService(t *testing.T) {
+func TestVaultRepository_GetByIdAndService(t *testing.T) {
 	ctx := context.Background()
 
 	// Setup
@@ -134,23 +135,23 @@ func TestGetByIdAndService(t *testing.T) {
 
 	tests := []struct {
 		name			string
-		serviceNameIndex		[]byte
+		serviceIndex		[]byte
 		userID			uuid.UUID
 		expectedError	error
 	}{
 		{
 			name: "Success_GetByIdAndService",
-			serviceNameIndex: newCredential.ServiceNameIndex,
+			serviceIndex: newCredential.ServiceIndex,
 			userID: newCredential.UserID,
 			expectedError: nil,
 		},{
 			name: "Failure_Service_Inexistent",
-			serviceNameIndex: []byte("service_wrong"),
+			serviceIndex: []byte("service_wrong"),
 			userID: newCredential.UserID,
 			expectedError: domain.ErrNotFound,
 		},{
 			name: "Failure_UserID_Inexistent",
-			serviceNameIndex: newCredential.ServiceNameIndex,
+			serviceIndex: newCredential.ServiceIndex,
 			userID: uuid.New(),
 			expectedError: domain.ErrNotFound,
 		},
@@ -158,7 +159,7 @@ func TestGetByIdAndService(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			retrieved, err := repo.GetByServiceAndUser(ctx, tt.serviceNameIndex, tt.userID)
+			retrieved, err := repo.GetByServiceAndUser(ctx, tt.serviceIndex, tt.userID)
 
 			if !errors.Is(err, tt.expectedError){
 				t.Fatalf("Expected error '%v', got '%v'", tt.expectedError, err)
@@ -173,11 +174,14 @@ func TestGetByIdAndService(t *testing.T) {
 				if retrieved.ID != newCredential.ID {
 					t.Errorf("ID mismatch: expected %s, got %s", newCredential.ID, retrieved.ID)
 				}
-				if !bytes.Equal(retrieved.ServiceNameIndex, tt.serviceNameIndex) {
-					t.Errorf("ServiceNameIndex mismatch")
+				if !bytes.Equal(retrieved.ServiceIndex, newCredential.ServiceIndex) {
+					t.Errorf("ServiceIndex mismatch")
 				}
-				if !bytes.Equal(retrieved.EncryptedData, newCredential.EncryptedData) {
-					t.Errorf("EncryptedData mismatch")
+				if !bytes.Equal(retrieved.ServiceEncrypted, newCredential.ServiceEncrypted) {
+					t.Errorf("ServiceEncrypted mismatch")
+				}
+				if !bytes.Equal(retrieved.PayloadEncrypted, newCredential.PayloadEncrypted) {
+					t.Errorf("PayloadEncrypted mismatch")
 				}
 				if retrieved.CreatedAt != newCredential.CreatedAt {
 					t.Errorf("CreatedAt mismatch")

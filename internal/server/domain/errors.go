@@ -9,8 +9,9 @@ var (
 	ErrMissingSecretHash = errors.New("missing secret hash")
 	ErrInvalidPHCFormat = errors.New("invalid PHC format")
 
-	ErrEmptyServiceNameIndex = errors.New("service name cannot be empty")
-	ErrEmptyEncryptedData = errors.New("encrypted data cannot be empty")
+	ErrEmptyServiceIndex = errors.New("service index cannot be empty")
+	ErrEmptyServiceEncrypted = errors.New("encrypted service cannot be empty")
+	ErrEmptyPayload = errors.New("encrypted payload cannot be empty")
 	ErrInvalidUserID = errors.New("Invalid userID format")
 	
 	// Storage
