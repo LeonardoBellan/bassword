@@ -11,7 +11,7 @@ This is an educational project exploring golang development, client-server archi
 
 - **Client-Server model** - Decoupled client and server backend.
 - **Cobra CLI** - Simple and intuitive terminal interface with memory wiping for the credentials.
-- **Zero-Knowledge Architecture** - Encryption and decryption are performed strictly on the client side; the server never receives plain text data or the master passsword. - **Key Derivation and Separation** - Cryptographic keys and the authHash are derived from the user's master password using argon2id. - **Client-Side Encryption** - Credentials are secured locally using AES-GCM symmetric encryption before transmission.
+- **Zero-Knowledge Architecture** - Encryption and decryption are performed strictly on the client side; the server never receives plain text data or the master password. - **Key Derivation and Separation** - Cryptographic keys and AuthHash are derived from the user's master password using argon2id. - **Client-Side Encryption** - Credentials are secured locally using AES-GCM symmetric encryption before transmission.
 - **Authentication** - Performed by sending an authentication hash, which is re-hashed on the server-side to prevent database leakage.
 - **Blind indexing** - Supports querying without exposing the user's used services.
 - **Cloud-Ready Architecture** - Decoupled business logic and storage layer for fast db migration.
@@ -30,7 +30,7 @@ Clone the repository and install the binaries of client and server.
 ```bash
 git clone https://github.com/yourusername/bassword.git
 cd bassword
-go install ...
+go install ./...
 ```
 
 ### 2. Running the server
