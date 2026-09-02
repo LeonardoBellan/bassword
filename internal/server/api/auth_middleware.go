@@ -7,12 +7,12 @@ import (
 	"strings"
 
 	"github.com/LeonardoBellan/bassword/internal/server/api/handlers"
-	"github.com/LeonardoBellan/bassword/internal/shared/crypto"
+	"github.com/LeonardoBellan/bassword/internal/server/auth"
 	"github.com/golang-jwt/jwt/v5"
 )
 
 // AuthMiddleware verifies the provided token and saves in the context the user ID
-func AuthMiddleware(tm *crypto.TokenManager) func(http.Handler) http.Handler {
+func AuthMiddleware(tm *auth.TokenManager) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler{
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 

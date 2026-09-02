@@ -11,6 +11,8 @@ import (
 	"golang.org/x/crypto/argon2"
 )
 
+var ErrMismatchedSecret = errors.New("given secret does not match")
+
 type Argon2Configuration struct {
     HashRaw    []byte
     Salt       []byte

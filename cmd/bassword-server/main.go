@@ -16,7 +16,7 @@ import (
 	"github.com/LeonardoBellan/bassword/internal/server/domain"
 	"github.com/LeonardoBellan/bassword/internal/server/service"
 	"github.com/LeonardoBellan/bassword/internal/server/storage"
-	"github.com/LeonardoBellan/bassword/internal/shared/crypto"
+	"github.com/LeonardoBellan/bassword/internal/server/auth"
 
 	"github.com/joho/godotenv"
 )
@@ -90,7 +90,7 @@ func main() {
 	jwtKey := os.Getenv("JWT_KEY")
 	exp := getJWTExpiration()
 
-	tm, err := crypto.NewTokenManager(jwtKey, exp)
+	tm, err := auth.NewTokenManager(jwtKey, exp)
 	if err != nil {
 		log.Fatalf("Error creating token manager: %v", err)
 	}

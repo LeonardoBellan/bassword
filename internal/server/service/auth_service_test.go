@@ -8,7 +8,8 @@ import (
 
 	"github.com/LeonardoBellan/bassword/internal/server/domain"
 	"github.com/LeonardoBellan/bassword/internal/server/service"
-	"github.com/LeonardoBellan/bassword/internal/shared/crypto"
+	"github.com/LeonardoBellan/bassword/internal/server/auth"
+	"github.com/LeonardoBellan/bassword/internal/server/crypto"
 	"github.com/google/uuid"
 )
 
@@ -106,7 +107,7 @@ func TestAuthService_Register(t *testing.T) {
 			ctx := context.Background()
 			fakeRepo := NewFakeUserRepository(tt.simulateError, tt.simulateConflict)
 			
-			tm, err := crypto.NewTokenManager("jwt-key", 10*time.Minute)
+			tm, err := auth.NewTokenManager("jwt-key", 10*time.Minute)
 			if err != nil {
 				t.Fatalf("Failure creating token manager")
 			}
@@ -187,7 +188,7 @@ func TestAuthService_Authenticate(t *testing.T) {
 				tt.setupRepo(fakeRepo)
 			}
 
-			tm, err := crypto.NewTokenManager("jwt-key", 10*time.Minute)
+			tm, err := auth.NewTokenManager("jwt-key", 10*time.Minute)
 			if err != nil {
 				t.Fatalf("Failure creating token manager")
 			}

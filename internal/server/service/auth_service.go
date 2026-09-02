@@ -7,7 +7,8 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/LeonardoBellan/bassword/internal/server/domain"
-	"github.com/LeonardoBellan/bassword/internal/shared/crypto"
+	"github.com/LeonardoBellan/bassword/internal/server/auth"
+	"github.com/LeonardoBellan/bassword/internal/server/crypto"
 )
 
 type UserRepository interface {
@@ -18,10 +19,10 @@ type UserRepository interface {
 
 type AuthService struct {
 	repo UserRepository
-	tm *crypto.TokenManager
+	tm *auth.TokenManager
 }
 
-func NewAuthService(r UserRepository, tm *crypto.TokenManager) *AuthService {
+func NewAuthService(r UserRepository, tm *auth.TokenManager) *AuthService {
 	return &AuthService{
 		repo:r,
 		tm: tm,

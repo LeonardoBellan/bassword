@@ -1,4 +1,4 @@
-package crypto
+package auth
 
 import (
 	"errors"
@@ -9,6 +9,8 @@ import (
 
 	"github.com/golang-jwt/jwt/v5"
 )
+
+var ErrInvalidToken = errors.New("invalid token format")
 
 // Creates and validates JWT
 type TokenManager struct {

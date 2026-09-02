@@ -4,12 +4,12 @@ import (
 	"context"
 
 	"github.com/LeonardoBellan/bassword/internal/server/api/handlers"
-	"github.com/LeonardoBellan/bassword/internal/shared/crypto"
+	"github.com/LeonardoBellan/bassword/internal/server/auth"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 )
 
-func SetupRouter(ctx context.Context, tm *crypto.TokenManager, authHandler *handlers.AuthHandler, vaultHandler *handlers.VaultHandler) *chi.Mux {
+func SetupRouter(ctx context.Context, tm *auth.TokenManager, authHandler *handlers.AuthHandler, vaultHandler *handlers.VaultHandler) *chi.Mux {
 	r := chi.NewRouter()
 
 	// Middleware
