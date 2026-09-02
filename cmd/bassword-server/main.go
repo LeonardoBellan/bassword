@@ -81,8 +81,10 @@ func main() {
 	ctx := context.Background()
 	err := godotenv.Load()
     if err != nil {
-    	log.Fatal(err)
-    }
+    	log.Println(".env not found, using system variables")
+  }
+
+	port := os.Getenv("PORT")
 
 	// Token manager setup
 	jwtKey := os.Getenv("JWT_KEY")
@@ -119,8 +121,9 @@ func main() {
 
 	// Server start
 	//TODO: Background server startup with Goroutine
-	log.Println("Starting API server on :8080")
-	if err := http.ListenAndServe(":8080", router); err != nil {
+	log.Println("Starting API server on port ", port)
+	if err := http.ListenAndServe(":"+port, router); err != nil {
+
 		log.Fatal(err)
 	}
 

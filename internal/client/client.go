@@ -89,7 +89,7 @@ func (c *Client) Login(masterPassword []byte) error {
 
 	var result LoginResponse
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return fmt.Errorf("Error deconding response: %v", err)
+		return fmt.Errorf("Error decoding response: %v", err)
 	}
 
 	c.Token = result.Data.Token
