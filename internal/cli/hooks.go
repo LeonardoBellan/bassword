@@ -17,6 +17,10 @@ func RequireLogin(state *AppState) error {
 
 	// Login
 	if err := state.Client.Login(masterPassword); err != nil {        
+		if errors.Is(err, client.ErrMissingEmail) {
+			return fmt.Errorf("User is not registered, use 'bassword register [email]'")
+		}
+
 		if errors.Is(err, client.ErrUnauthorized) {
 			return fmt.Errorf("Invalid credentials. Please try again.")
 		}

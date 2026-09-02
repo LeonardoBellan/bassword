@@ -23,13 +23,13 @@ func NewRegisterCmd(state *AppState) *cobra.Command {
 
             // Prompt master password
             masterPassword, err := securePrompt("Insert master password: ")
-            if err != nil { 
-                return err 
+            if err != nil {
+                return err
             }
 
             err = state.Client.Register(masterPassword)
-            if err != nil { 
-                return err 
+            if err != nil {
+                return err
             }
 
             // Save email in config
