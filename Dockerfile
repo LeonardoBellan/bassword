@@ -1,4 +1,5 @@
 FROM golang:1.26
+
 WORKDIR /app
 
 # Dependencies
@@ -13,5 +14,8 @@ RUN go build -o bassword-server ./cmd/bassword-server/main.go
 
 # ENV and ports
 EXPOSE 8080
+
+# RUN adduser appuser
+# USER appuser
 
 CMD ["./bassword-server"]
