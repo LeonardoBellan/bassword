@@ -55,6 +55,7 @@ func setupDB(ctx context.Context, path string) (*sql.DB, error){
 }
 
 func main() {
+	ctx := context.Background()
 
 	// Environment Setup
 	err := godotenv.Load()
@@ -65,7 +66,7 @@ func main() {
 	dbPath := getDBPath()
 	port := config.GetString("PORT","8080")
 	jwtKey := config.GetString("JWT_KEY", "LGQDM2pMRa78eG8w/ahngaotbx4k9RkfAQ2hhjHq2Mg=") // Default key for dev
-	jwtExp := config.GetDuration("JWT_EXPIRATION_TIME", 15*time.Minutes)
+	jwtExp := config.GetDuration("JWT_EXPIRATION_TIME", 15*time.Minute)
 
 	// Token manager setup
 	tm, err := auth.NewTokenManager(jwtKey, jwtExp)
@@ -74,7 +75,7 @@ func main() {
 	}
 	
 	// DB and repository setup
-	conn, err := setupDB(context.Background(), dbPath)
+	conn, err := setupDB(ctx, dbPath)
 	if err != nil {
 		log.Fatalf("Database setup failed: %v", err)
 	}
