@@ -4,13 +4,13 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"fmt"
 	"log"
 	"net/http"
 	"os"
 	"path/filepath"
 	"time"
 
+	"github.com/LeonardoBellan/bassword/internal/config"
 	"github.com/LeonardoBellan/bassword/internal/server/api"
 	"github.com/LeonardoBellan/bassword/internal/server/api/handlers"
 	"github.com/LeonardoBellan/bassword/internal/server/domain"
@@ -22,18 +22,14 @@ import (
 )
 
 func getDBPath() string {
-	configPath := os.Getenv("DB_PATH")
+	configPath := config.GetString("DB_PATH", "./data/bassword.db")
 
-	// Default
-	if configPath == "" {
-		configPath = ".local.db"
-	}
-
-	// If absolute path
+	// Absolute path
 	if filepath.IsAbs(configPath) {
 		return configPath
 	}
 
+	// Relative path (HOME)
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
 		homeDir = "."
@@ -58,47 +54,27 @@ func setupDB(ctx context.Context, path string) (*sql.DB, error){
 	return conn, nil
 }
 
-func getJWTExpiration() time.Duration {
-	envValue := os.Getenv("JWT_EXPIRATION_TIME")
-
-	// Default
-	if envValue == "" {
-		return 15*time.Minute
-	}
-
-	duration, err := time.ParseDuration(envValue)
-	if err != nil {
-		log.Printf("Error parsing JWT_EXPIRATION_TIME (%s), using default value: %v", envValue, err)
-		return 15*time.Minute
-	}
-
-	return duration
-}
-
 func main() {
 
 	// Environment Setup
-	ctx := context.Background()
 	err := godotenv.Load()
     if err != nil {
     	log.Println(".env not found, using system variables")
   }
 
-	port := os.Getenv("PORT")
+	dbPath := getDBPath()
+	port := config.GetString("PORT","8080")
+	jwtKey := config.GetString("JWT_KEY", "LGQDM2pMRa78eG8w/ahngaotbx4k9RkfAQ2hhjHq2Mg=") // Default key for dev
+	jwtExp := config.GetDuration("JWT_EXPIRATION_TIME", 15*time.Minutes)
 
 	// Token manager setup
-	jwtKey := os.Getenv("JWT_KEY")
-	exp := getJWTExpiration()
-
-	tm, err := auth.NewTokenManager(jwtKey, exp)
+	tm, err := auth.NewTokenManager(jwtKey, jwtExp)
 	if err != nil {
 		log.Fatalf("Error creating token manager: %v", err)
 	}
 	
 	// DB and repository setup
-	dbPath := getDBPath()
-	fmt.Println(dbPath)
-	conn, err := setupDB(ctx, dbPath)
+	conn, err := setupDB(context.Background(), dbPath)
 	if err != nil {
 		log.Fatalf("Database setup failed: %v", err)
 	}
@@ -123,7 +99,6 @@ func main() {
 	//TODO: Background server startup with Goroutine
 	log.Println("Starting API server on port ", port)
 	if err := http.ListenAndServe(":"+port, router); err != nil {
-
 		log.Fatal(err)
 	}
 
