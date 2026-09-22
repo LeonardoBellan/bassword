@@ -2,13 +2,16 @@ package storage_test
 
 import (
 	"context"
+	"fmt"
 	"database/sql"
 	"errors"
-	"path/filepath"
 	"testing"
 
 	"github.com/LeonardoBellan/bassword/internal/server/domain"
 	"github.com/LeonardoBellan/bassword/internal/server/storage"
+	"github.com/LeonardoBellan/bassword/internal/config"
+
+	"github.com/joho/godotenv"
 )
 
 // setupdTestDB creates and connects to a temporary uninitialized db
@@ -16,25 +19,40 @@ import (
 func setupTestDB(ctx context.Context,t *testing.T) (*sql.DB, string) {
 	t.Helper()
 	
-	// temporary db file
-	dbPath := filepath.Join(t.TempDir(), "test.db")
-	
-	conn, err := storage.OpenDB(ctx, dbPath)
+	err := godotenv.Load("../../../.env")
+    if err != nil {
+    	t.Log(".env not found, using default values")
+  }
+
+	dbHost := config.GetString("TEST_DB_HOST","localhost")
+	dbPort := config.GetString("TEST_DB_PORT","5432")
+	dbUser := config.GetString("TEST_DB_USER","userexample")
+	dbPassword := config.GetString("TEST_DB_PASSWORD","passwordexample")
+	dbName := config.GetString("TEST_DB_NAME","bassword-db")
+	connString := fmt.Sprintf("host=%s user=%s password=%s port=%s dbname=%s sslmode=disable", dbHost, dbUser, dbPassword, dbPort, dbName)
+
+	// Open connection
+	conn, err := sql.Open("pgx", connString)
 	if err != nil {
-		t.Fatalf("Error opening db in %s: %v", dbPath, err)
+		t.Fatalf("Error opening db: %v", err)
 	}
 
-	// Check connection
 	if err := conn.PingContext(ctx); err != nil {
 		t.Fatalf("Error connecting to db: %v", err)
+	}
+
+	_, err = conn.ExecContext(ctx, "DROP TABLE IF EXISTS users, vault CASCADE")
+	if err != nil {
+		t.Fatalf("Failed to clean database tables: %v", err)
 	}
 	
 	// Close connection
 	t.Cleanup(func() {
+		conn.ExecContext(ctx, "DROP TABLE IF EXISTS users, vault CASCADE")
 		conn.Close()
 	})
 	
-	return conn, dbPath
+	return conn, connString
 }
 
 // setupdInitializedTestDB initializes and connects to a temporary db
@@ -42,11 +60,11 @@ func setupTestDB(ctx context.Context,t *testing.T) (*sql.DB, string) {
 func setupInitializedTestDB(ctx context.Context, t *testing.T) (*sql.DB, string) {
 	t.Helper()
 	
-	conn, path := setupTestDB(ctx,t)
+	conn, connString := setupTestDB(ctx,t)
 	if err := storage.InitializeDB(ctx,conn); err != nil {
 		t.Fatalf("InitializeDB failed: %v", err)
 	}
-	return conn, path
+	return conn, connString
 }
 
 func TestInitializeDB(t *testing.T) {
@@ -59,14 +77,14 @@ func TestInitializeDB(t *testing.T) {
 		}
 
 		// Check tables
-		_, err := conn.Exec("INSERT INTO users (email, secret_hash) VALUES ('test_user', 'test_hash')")
+		_, err := conn.Exec("INSERT INTO users (id, email, secret_hash) VALUES ('f47ac10b-58cc-4372-a567-0e02b2c3d479','test_user', 'test_hash')")
     	if err != nil {
-     	   t.Errorf("Could not insert into 'users' after initialization: %v", err)
+      	t.Errorf("Could not insert into 'users' after initialization: %v", err)
     	}
 
-    	_, err = conn.Exec("INSERT INTO vault (service_index, service_encrypted, data_encrypted, user_id) VALUES ('service_index','service_encrypted','encrypted-secret',1)")
+    	_, err = conn.Exec("INSERT INTO vault (id, service_index, service_encrypted, data_encrypted, user_id) VALUES ('f47ac10b-58cc-4372-a567-0e02b2c3d479','service_index','service_encrypted','encrypted-secret','f47ac10b-58cc-4372-a567-0e02b2c3d479')")
     	if err != nil {
-     	   t.Errorf("Could not insert into 'vault' after initialization: %v", err)
+        t.Errorf("Could not insert into 'vault' after initialization: %v", err)
     	}
 	})
 
@@ -89,20 +107,20 @@ func TestInitializeDB(t *testing.T) {
 		// Initialization with cancelled context
 		err := storage.InitializeDB(ctx, conn)
 
-    	if err == nil {
-        	t.Error("Expected InitializeDB to fail with a cancelled context, got nil")
-    	} else if !errors.Is(err, context.Canceled) {
-       		t.Errorf("Expected error '%v', got '%v'", context.Canceled, err)
-   		}
+    if err == nil {
+      t.Error("Expected InitializeDB to fail with a cancelled context, got nil")
+    } else if !errors.Is(err, context.Canceled) {
+    	t.Errorf("Expected error '%v', got '%v'", context.Canceled, err)
+   	}
 	})
 }
 
-func TestOpenDB(t *testing.T) {
+func TestNewPostgresDB(t *testing.T) {
 	t.Run("Success_After_Initialization", func(t *testing.T) {
 		ctx := context.Background()
-		_, path := setupInitializedTestDB(ctx,t)
+		_, connString := setupInitializedTestDB(ctx,t)
 
-		conn, err := storage.OpenDB(ctx,path)
+		conn, err := storage.NewPostgresDB(ctx, connString)
 		if err != nil { t.Fatalf("Could not open initialized db, got: %v", err) }
 		t.Cleanup(func() { conn.Close() })
 
@@ -117,16 +135,16 @@ func TestOpenDB(t *testing.T) {
 		cancel()
 
 		// Setup with base context
-		_, path := setupInitializedTestDB(context.Background(), t) 
+		_, connString := setupInitializedTestDB(context.Background(), t) 
 
 		// Initialization with cancelled context
-		conn, err := storage.OpenDB(ctx,path)
+		conn, err := storage.NewPostgresDB(ctx, connString)
 
 		if conn != nil { t.Cleanup(func() { conn.Close() }) }
 		if err == nil {
-        	t.Error("Expected OpenDB to fail with a cancelled context, got nil")
-    	} else if !errors.Is(err, context.Canceled) {
-       		t.Errorf("Expected error '%v', got '%v'", context.Canceled, err)
-   		}
+    	t.Error("Expected to fail with a cancelled context, got nil")
+    } else if !errors.Is(err, context.Canceled) {
+    	t.Errorf("Expected error '%v', got '%v'", context.Canceled, err)
+		}
 	})
 }

@@ -4,25 +4,33 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 
 	"github.com/LeonardoBellan/bassword/internal/server/domain"
-	_ "github.com/mattn/go-sqlite3"
+
+	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
-// OpenDB creates a connection to the sqlite3 db in the provided path
-// Returns the db connection
-func OpenDB(ctx context.Context, dbPath string) (*sql.DB, error) {
-	// Open db connection
-	conn, err := sql.Open("sqlite3", dbPath)
-	if err != nil {	return nil,err }
 
-	// Verify connection and initialization
-	if err := conn.PingContext(ctx); err != nil { 
-		conn.Close()
-		return nil,err
+func NewPostgresDB(ctx context.Context, connString string) (*sql.DB, error){
+	conn, err := sql.Open("pgx", connString)
+	if err != nil {
+		return nil, fmt.Errorf("unable to connect to database: %w", err)
 	}
 
-	return conn,nil
+	if err := conn.PingContext(ctx); err != nil {
+		conn.Close()
+		return nil, fmt.Errorf("ping failed: %w", err)
+	}
+
+	if err := InitializeDB(ctx, conn); err != nil {
+		if !errors.Is(err, domain.ErrDBAlreadyInitialized) {
+			conn.Close()
+			return nil, fmt.Errorf("failed to initialize db: %w", err)
+		}
+	}
+
+	return conn, nil
 }
 
 // InitializeDB initializes the database with the master password
@@ -48,24 +56,24 @@ func InitializeDB(ctx context.Context, conn *sql.DB) error {
 
 }
 
-// VerifyDB verifies the presence of the db tables
+// VerifyDB verifies the presence of the tables
 // Returns ErrDBNotInitialized if not initialized, nil if it has been already initialized
 func verifyDB(ctx context.Context, conn *sql.DB) error {
 	// Check authData presence
 	var count int
     query := `
-		SELECT COUNT(name) 
-		FROM sqlite_master 
-		WHERE type='table' 
-			AND name IN ('users','vault')`
-    
+			SELECT COUNT(table_name) 
+			FROM information_schema.tables 
+			WHERE table_schema = 'public' 
+				AND table_name IN ('users','vault')`
+			
     err := conn.QueryRowContext(ctx, query).Scan(&count)
 	
     if err != nil {
         return err // I/O error
     }
 
-    // db not initialized
+    // check if there are tables missing
     if count < 2 {
         return domain.ErrDBNotInitialized
     }
@@ -74,6 +82,14 @@ func verifyDB(ctx context.Context, conn *sql.DB) error {
 }
 
 func createTableUsers(ctx context.Context, conn *sql.DB) error {
+	createUsersTableSQL := `
+		CREATE TABLE IF NOT EXISTS users (
+			id uuid PRIMARY KEY, 
+			email text NOT NULL UNIQUE,
+			secret_hash text NOT NULL,
+			created_at timestamp WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+		);`
+
 	/* Create table if not exists */
 	if _, err := conn.ExecContext(ctx, createUsersTableSQL); err != nil {
 		return err
@@ -83,6 +99,16 @@ func createTableUsers(ctx context.Context, conn *sql.DB) error {
 }
 
 func createTableVault(ctx context.Context, conn *sql.DB) error {
+	createVaultTableSQL := `
+		CREATE TABLE IF NOT EXISTS vault (
+			id uuid PRIMARY KEY, 
+			user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+			service_index bytea NOT NULL,
+			service_encrypted bytea NOT NULL,
+			data_encrypted bytea NOT NULL,
+			created_at timestamp WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+			UNIQUE(user_id, service_index)
+		);`
 	/* Create table if not exists */
 	if _, err := conn.ExecContext(ctx, createVaultTableSQL); err != nil {
 		return err

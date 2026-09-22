@@ -12,10 +12,9 @@ import (
 )
 
 // createExampleCredentials mock credentials
-func createExampleCredentials(t *testing.T) (*domain.Credentials, error) {
+func createExampleCredentials(t *testing.T, userID uuid.UUID) (*domain.Credentials, error) {
 	t.Helper()
 
-	userID := uuid.New()
 	serviceIndex := []byte("example_service_index")
 	serviceEncrypted := []byte("example_service_encrypted")
 	payloadEncrypted := []byte("encrypted_secred")
@@ -23,21 +22,27 @@ func createExampleCredentials(t *testing.T) (*domain.Credentials, error) {
 }
 
 // SetupTestVaultRepository initializes a repository
-func setupTestVaultRepository(ctx context.Context, t *testing.T) *storage.SQLiteVaultRepository {
+func setupTestVaultRepository(ctx context.Context, t *testing.T) (*storage.PostgresVaultRepository,uuid.UUID) {
 	t.Helper()
 
 	conn,_ := setupInitializedTestDB(ctx,t)
-	repository := storage.NewSQLiteVaultRepository(conn)
+	repository := storage.NewPostgresVaultRepository(conn)
 
-	return repository
+	// Fake user for foreign key constraint
+	userID := uuid.New()
+	_, err := conn.ExecContext(ctx, "INSERT INTO users (id, email, secret_hash) VALUES ($1,$2,$3)", userID, "user@example.com", "secret_hash")
+	if err != nil {
+		t.Fatalf("Cannot insert mock user setup: %v", err)
+	}
+	return repository, userID
 }
 
 func TestVaultRepository_Save(t *testing.T) {
 	ctx := context.Background()
-	repo := setupTestVaultRepository(ctx, t)
+	repo, userID := setupTestVaultRepository(ctx, t)
 
 	t.Run("Success_Save", func(t *testing.T) {
-		newCredentials, err := createExampleCredentials(t)
+		newCredentials, err := createExampleCredentials(t, userID)
 		if err != nil { t.Fatalf("Error creating example credentials: %v", err) }
 
 		err = repo.Save(ctx, newCredentials)
@@ -55,8 +60,8 @@ func TestVaultRepository_GetByIdAndUser(t *testing.T) {
 	ctx := context.Background()
 
 	// Setup
-	repo := setupTestVaultRepository(ctx, t)
-	newCredential, err := createExampleCredentials(t)
+	repo, userID := setupTestVaultRepository(ctx, t)
+	newCredential, err := createExampleCredentials(t, userID)
 	if err != nil { t.Fatalf("Error creating example credentials: %v", err) }
 
 	if err := repo.Save(ctx, newCredential); err != nil {
@@ -125,8 +130,8 @@ func TestVaultRepository_GetByIdAndService(t *testing.T) {
 	ctx := context.Background()
 
 	// Setup
-	repo := setupTestVaultRepository(ctx, t)
-	newCredential, err := createExampleCredentials(t)
+	repo, userID := setupTestVaultRepository(ctx, t)
+	newCredential, err := createExampleCredentials(t, userID)
 	if err != nil { t.Fatalf("Error creating example credentials: %v", err) }
 
 	if err := repo.Save(ctx, newCredential); err != nil {

@@ -2,18 +2,14 @@ package main
 
 import (
 	"context"
-	"database/sql"
-	"errors"
 	"log"
+	"fmt"
 	"net/http"
-	"os"
-	"path/filepath"
 	"time"
 
 	"github.com/LeonardoBellan/bassword/internal/config"
 	"github.com/LeonardoBellan/bassword/internal/server/api"
 	"github.com/LeonardoBellan/bassword/internal/server/api/handlers"
-	"github.com/LeonardoBellan/bassword/internal/server/domain"
 	"github.com/LeonardoBellan/bassword/internal/server/service"
 	"github.com/LeonardoBellan/bassword/internal/server/storage"
 	"github.com/LeonardoBellan/bassword/internal/server/auth"
@@ -21,40 +17,9 @@ import (
 	"github.com/joho/godotenv"
 )
 
-func getDBPath() string {
-	configPath := config.GetString("DB_PATH", "./data/bassword.db")
-
-	// Absolute path
-	if filepath.IsAbs(configPath) {
-		return configPath
-	}
-
-	// Relative path (HOME)
-	homeDir, err := os.UserHomeDir()
-	if err != nil {
-		homeDir = "."
-	}
-	
-	return filepath.Join(homeDir, configPath)
-}
-
-func setupDB(ctx context.Context, path string) (*sql.DB, error){
-	conn,err := storage.OpenDB(ctx, path)
-	if err != nil { log.Fatalf("failed to open database: %v", err) }
-
-	if err := storage.InitializeDB(ctx, conn); err != nil {
-		if !errors.Is(err, domain.ErrDBAlreadyInitialized) {
-			conn.Close()
-			log.Fatalf("failed to initialize db: %v", err)
-		}
-		
-		log.Print("Db already initialized")
-	}
-
-	return conn, nil
-}
-
 func main() {
+	ctx := context.Background()
+
 	ctx := context.Background()
 
 	// Environment Setup
@@ -63,7 +28,12 @@ func main() {
     	log.Println(".env not found, using system variables")
   }
 
-	dbPath := getDBPath()
+	dbHost := config.GetString("DB_HOST","db")
+	dbPort := config.GetString("DB_PORT","5432")
+	dbUser := config.GetString("DB_USER","userexample")
+	dbPassword := config.GetString("DB_PASSWORD","passwordexample")
+	dbName := config.GetString("DB_NAME","bassword-db")
+
 	port := config.GetString("PORT","8080")
 	jwtKey := config.GetString("JWT_KEY", "LGQDM2pMRa78eG8w/ahngaotbx4k9RkfAQ2hhjHq2Mg=") // Default key for dev
 	jwtExp := config.GetDuration("JWT_EXPIRATION_TIME", 15*time.Minute)
@@ -73,17 +43,19 @@ func main() {
 	if err != nil {
 		log.Fatalf("Error creating token manager: %v", err)
 	}
-	
+
 	// DB and repository setup
-	conn, err := setupDB(ctx, dbPath)
+	connString := fmt.Sprintf("host=%s user=%s password=%s port=%s dbname=%s sslmode=disable", dbHost, dbUser, dbPassword, dbPort, dbName)
+	conn, err := storage.NewPostgresDB(ctx, connString)
 	if err != nil {
 		log.Fatalf("Database setup failed: %v", err)
 	}
+	defer conn.Close()
 
-	userRepo := storage.NewSQLiteUserRepository(conn)
-	vaultRepo := storage.NewSQLiteVaultRepository(conn)
+	userRepo := storage.NewPostgresUserRepository(conn)
+	vaultRepo := storage.NewPostgresVaultRepository(conn)
 
-	// service setup
+	// service setup(),
 	authService := service.NewAuthService(userRepo, tm)
 	vaultService := service.NewVaultService(vaultRepo)
 
@@ -97,11 +69,8 @@ func main() {
 	//TODO: Server setup (addr, handler, read/write timeout, Idle timeOut)
 
 	// Server start
-	//TODO: Background server startup with Goroutine
 	log.Println("Starting API server on port ", port)
 	if err := http.ListenAndServe(":"+port, router); err != nil {
 		log.Fatal(err)
 	}
-
-	//TODO: server shutdown
 }
