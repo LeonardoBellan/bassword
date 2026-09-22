@@ -20,12 +20,12 @@ func createExampleUser(t *testing.T) (*domain.User, error) {
 }
 
 // SetupTestUserRepository initializes a repository
-func setupTestUserRepository(ctx context.Context, t *testing.T) *storage.SQLiteUserRepository {
+func setupTestUserRepository(ctx context.Context, t *testing.T) *storage.PostgresUserRepository {
 	t.Helper()
 
 	// Inizialize repository
 	conn, _ := setupInitializedTestDB(ctx, t)
-	repository := storage.NewSQLiteUserRepository(conn)
+	repository := storage.NewPostgresUserRepository(conn)
 
 	return repository
 }
