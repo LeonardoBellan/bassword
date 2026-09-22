@@ -20,8 +20,6 @@ import (
 func main() {
 	ctx := context.Background()
 
-	ctx := context.Background()
-
 	// Environment Setup
 	err := godotenv.Load()
     if err != nil {
