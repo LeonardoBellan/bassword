@@ -14,8 +14,8 @@ import (
 	"github.com/joho/godotenv"
 )
 
-// setupdTestDB creates and connects to a temporary uninitialized db
-// Returns the connection and path
+// setupdTestDB connects to a temporary uninitialized db
+// Returns the sql connection and the database connectionString
 func setupTestDB(ctx context.Context,t *testing.T) (*sql.DB, string) {
 	t.Helper()
 	
@@ -26,8 +26,8 @@ func setupTestDB(ctx context.Context,t *testing.T) (*sql.DB, string) {
 
 	dbHost := config.GetString("TEST_DB_HOST","localhost")
 	dbPort := config.GetString("TEST_DB_PORT","5432")
-	dbUser := config.GetString("TEST_DB_USER","userexample")
-	dbPassword := config.GetString("TEST_DB_PASSWORD","passwordexample")
+	dbUser := config.GetString("TEST_DB_USER","usertest")
+	dbPassword := config.GetString("TEST_DB_PASSWORD","passwordtest")
 	dbName := config.GetString("TEST_DB_NAME","bassword-db")
 	connString := fmt.Sprintf("host=%s user=%s password=%s port=%s dbname=%s sslmode=disable", dbHost, dbUser, dbPassword, dbPort, dbName)
 
@@ -55,7 +55,7 @@ func setupTestDB(ctx context.Context,t *testing.T) (*sql.DB, string) {
 	return conn, connString
 }
 
-// setupdInitializedTestDB initializes and connects to a temporary db
+// setupdInitializedTestDB initializes a database
 // Returns the connection and path
 func setupInitializedTestDB(ctx context.Context, t *testing.T) (*sql.DB, string) {
 	t.Helper()
@@ -129,7 +129,7 @@ func TestNewPostgresDB(t *testing.T) {
 			t.Fatalf("Could not connect to db: %v", err)
 		}
 	})
-		
+	
 	t.Run("Failure_Context_Cancelled", func(t *testing.T){
 		ctx, cancel := context.WithCancel(context.Background())
 		cancel()
