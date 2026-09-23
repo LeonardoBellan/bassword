@@ -10,22 +10,32 @@ services:
     environment:
       - DB_HOST=db
       - DB_PORT=5432
-      - DB_USER=userexample
-      - DB_PASSWORD=passwordexample
+      - DB_USER=user
+      - DB_PASSWORD=password
       - DB_NAME=bassword-db
     depends_on:
     - db
 
   db:
     image: postgres:alpine
-    ports:
-    - "5432:5432"
     environment:
-      POSTGRES_USER: userexample
-      POSTGRES_PASSWORD: passwordexample
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
       POSTGRES_DB: bassword-db
     volumes:
     - db-data:/var/lib/postgresql
+    attach: false
+
+  db-test:
+    image: postgres:alpine
+    profiles:
+    - test
+    ports:
+    - "5432:5432"
+    environment:
+      POSTGRES_USER: usertest
+      POSTGRES_PASSWORD: passwordtest
+      POSTGRES_DB: bassword-db
     attach: false
 
 volumes:

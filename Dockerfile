@@ -1,21 +1,23 @@
-FROM golang:1.26
+# STAGE 1
+FROM golang:1.26-alpine as builder
 
 WORKDIR /app
 
-# Dependencies
+# Install dependencies
 COPY go.mod go.sum ./
 RUN go mod download
 
-# Source code
+# Copy source code into container
 COPY cmd/ ./cmd/
 COPY internal/ ./internal/
 
 RUN go build -o bassword-server ./cmd/bassword-server/main.go
 
-# ENV and ports
+# RUNNER
+FROM scratch
+WORKDIR /app
+COPY --from=builder /app/bassword-server .
 EXPOSE 8080
 
-# RUN adduser appuser
-# USER appuser
-
+# Run application
 CMD ["./bassword-server"]
